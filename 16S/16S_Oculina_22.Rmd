@@ -1156,8 +1156,8 @@ plot2 <- plot_bar(ps.top90, x = "sample_id", fill="Class")+
   geom_bar(stat="identity")+
   theme_bw()+
   theme(panel.grid = element_blank()) +
-  scale_fill_manual(values = colorRampPalette(rev(brewer.pal(11, "Paired")))(18)) +
-  scale_colour_manual(values = colorRampPalette(rev(brewer.pal(11, "Paired")))(18)) +
+  scale_fill_manual(values = colorRampPalette(rev(brewer.pal(11, "Paired")))(19)) +
+  scale_colour_manual(values = colorRampPalette(rev(brewer.pal(11, "Paired")))(19)) +
   facet_wrap(~sym_state, ncol = 2, scales="free") +
   ggtitle("Top 90 ASVs across samples")
 plot2 #saved as top90_class_apo_sym_bysample.pdf as landscape 7x6
@@ -1185,8 +1185,8 @@ plot4 <- plot_bar(ps.top20, x = "sample_id", fill="Genus")+
   geom_bar(stat="identity")+
   theme_bw()+
   theme(panel.grid = element_blank()) +
-  scale_fill_manual(values = colorRampPalette(rev(brewer.pal(11, "Paired")))(17)) +
-  scale_colour_manual(values = colorRampPalette(rev(brewer.pal(11, "Paired")))(17)) +
+  scale_fill_manual(values = colorRampPalette(rev(brewer.pal(11, "Paired")))(15)) +
+  scale_colour_manual(values = colorRampPalette(rev(brewer.pal(11, "Paired")))(15)) +
   facet_wrap(~sym_state, ncol = 2, scales="free") +
   ggtitle("Top 20 ASVs across samples")
 plot4 #saved as top20_genus_bysample.pdf
@@ -1195,8 +1195,8 @@ plot5 <- plot_bar(ps.top20, x = "sym_state", fill="Genus")+
   geom_bar(stat="identity")+
   theme_bw()+
   theme(panel.grid = element_blank()) +
-  scale_fill_manual(values = colorRampPalette(rev(brewer.pal(11, "Paired")))(17)) +
-  scale_colour_manual(values = colorRampPalette(rev(brewer.pal(11, "Paired")))(17)) +
+  scale_fill_manual(values = colorRampPalette(rev(brewer.pal(11, "Paired")))(15)) +
+  scale_colour_manual(values = colorRampPalette(rev(brewer.pal(11, "Paired")))(15)) +
   facet_wrap(~sym_state, ncol = 2, scales="free") +
   ggtitle("Top 20 ASVs across samples")
 plot5 # saved as top20_genus_apo_sym.pdf
@@ -1217,7 +1217,7 @@ from picrust2_pipeline.py:
 head(meta)
 meta_c 
 group="sym_state"
-ko_abundance_file <- "pred_metagenome_unstrat.tsv"
+ko_abundance_file <- "./files/pred_metagenome_unstrat.tsv"
 kegg_abundance <- ko2kegg_abundance(ko_abundance_file)
 
 #LinDA: https://genomebiology.biomedcentral.com/articles/10.1186/s13059-022-02655-5
@@ -1225,7 +1225,7 @@ kegg_abundance <- ko2kegg_abundance(ko_abundance_file)
 
 daa_results_list <-
   ggpicrust2(
-    file = "pred_metagenome_unstrat.tsv",
+    file = "./files/pred_metagenome_unstrat.tsv",
     metadata = meta_c,
     group = "sym_state",
     pathway = "KO",
@@ -1259,11 +1259,11 @@ no significant functional enrichment by sym state
 
 DESEQ with ASV counts data
 ```{r}
-seqtab_trim_rare_t <- read.delim("seqtab_trim_rare_042723.tsv")
+seqtab_trim_rare_t <- read.delim("./files/seqtab_trim_rare_042723.tsv")
 head(seqtab_trim_rare_t)
 counts <- column_to_rownames(seqtab_trim_rare_t, var="ASV_ID")
 length(counts[,1])
-#662
+#661
 head(counts)
 head(meta_c)
 meta_c_new <- meta_c
@@ -1331,9 +1331,9 @@ res_apo_sym_s<- results(dds_s, contrast = c("sym_state", "sym", "apo"))
 res_apo_sym_s
 
 table(res_apo_sym_s$padj<0.1)
-# FALSE=357 TRUE=1
+# FALSE=345 TRUE=1
 table(res_apo_sym_s$pvalue<0.05)
-#FALSE=344  TRUE=14
+#FALSE=336  TRUE=10
 
 res_apo_sym_s <- as.data.frame(res_apo_sym_s)
 ```
