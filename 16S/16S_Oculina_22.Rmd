@@ -128,7 +128,7 @@ keep_samples <- c("A5", "A6" ,"B6" , "D5", "F4", "F5", "G4" ,"G5" ,"H4", "H5")
 ```
 
 ```{r}
-meta <- read.csv("16S_Oculina_metadata.csv")
+meta <- read.csv("./files/16S_Oculina_metadata.csv")
 meta
 meta$genet <- c("A", "A", "F", "blank", "blank", "F", "blank", "blank", "blank", "D", "E", "D", "E", "C", "C")
 meta
