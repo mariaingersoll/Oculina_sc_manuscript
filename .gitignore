@@ -4,3 +4,4 @@
 .Ruserdata
 *.fastq
 *.fa.gz
+*.fastq.gz
