@@ -408,7 +408,7 @@ It is common at this point, especially in 16S/18S/ITS amplicon sequencing, to as
 The dada2 package GitHub maintains the most updated versions of the [Silva databases.](https://benjjneb.github.io/dada2/training.html), but I downloaded the databases from the associated [Zenodo](https://zenodo.org/record/4587955#.YuBdCS-cbOQ). The versions in this GitHub repository, used here, were downloaded on 13 May 2024.
 
 ```{r}
-silva_path <- "~/Desktop/BU_Research/Davies-Gilmore/16S_Oculina_22/silva_nr99_v138.1_train_set.fa.gz" 
+silva_path <- "~/Desktop/BU_Research/Davies-Gilmore/Oculina_sc_Manuscript/Oculina_sc_Manuscript/16S/silva/silva_nr99_v138.1_train_set.fa.gz" 
 taxa <- assignTaxonomy(seqtab_nochim, silva_path, multithread=TRUE)
 head(taxa)
 ```
@@ -416,12 +416,12 @@ head(taxa)
 Extensions: The dada2 package also implements a method to make species level assignments based on exact matching between ASVs and sequenced reference strains. Recent analysis suggests that exact matching (or 100% identity) is the only appropriate way to assign species to 16S gene fragments. Currently, species-assignment training fastas are available for the Silva and RDP 16S databases. To follow the optional species addition step, download the silva_species_assignment_v138.1.fa.gz file, and place it in the directory with the fastq files.
 
 ```{r}
-silva_sp_path <- "~/Desktop/BU_Research/Davies-Gilmore/16S_Oculina_22/silva_species_assignment_v138.1.fa.gz"
+silva_sp_path <- "~/Desktop/BU_Research/Davies-Gilmore/Oculina_sc_Manuscript/Oculina_sc_Manuscript/16S/silva/silva_species_assignment_v138.1.fa.gz"
 taxa_sp <- addSpecies(taxa, silva_sp_path)
 
 ## Save objects to save time running (but will need to rerun if making upstream adjustments)
-write.csv(taxa, file="taxa.csv",row.name=TRUE,quote=FALSE)
-write.csv(taxa_sp, file="taxa_sp.csv",row.name=TRUE,quote=FALSE)
+write.csv(taxa, file="./files/taxa.csv",row.name=TRUE,quote=FALSE)
+write.csv(taxa_sp, file="./files/taxa_sp.csv",row.name=TRUE,quote=FALSE)
 
 #Now, save outputs so can come back to the analysis stage at a later point if desired
 saveRDS(seqtab_nochim, file="final_seqtab_nochim.rds")
@@ -461,7 +461,7 @@ head(taxa2)
 taxa_names(phylo_sp) <- paste0("ASV", seq(ntaxa(phylo_sp)))
 
 taxtab_seqs <- cbind(data.frame(tax_table(phylo_sp)), seqs_ps)
-write.csv(taxtab_seqs, "taxatable_withsequences.csv")
+write.csv(taxtab_seqs, "./files/taxatable_withsequences.csv")
 #####has asv sequences and corresponding tax name
 
 # make another file to use later that has the full taxonomic name separated by semi-colons with the corresponding ASV
@@ -491,31 +491,31 @@ load(file = "phylo_objs.Rdata")
 ps_nomito <- subset_taxa(phylo_sp, (Family != "Mitochondria") | is.na(Family))
 ps_nomito
 #phyloseq-class experiment-level object
-#otu_table()   OTU Table:         [ 1217 taxa and 15 samples ]
+#otu_table()   OTU Table:         [ 1216 taxa and 15 samples ]
 #sample_data() Sample Data:       [ 15 samples by 4 sample variables ]
-#tax_table()   Taxonomy Table:    [ 1217 taxa by 7 taxonomic ranks ]
+#tax_table()   Taxonomy Table:    [ 1216 taxa by 7 taxonomic ranks ]
 
 # remove all chloroplast from order
 ps_nochlor <- subset_taxa(ps_nomito, (Order != "Chloroplast") | is.na(Order))
 ps_nochlor
 #phyloseq-class experiment-level object
-#otu_table()   OTU Table:         [ 1163 taxa and 15 samples ]
+#otu_table()   OTU Table:         [ 1162 taxa and 15 samples ]
 #sample_data() Sample Data:       [ 15 samples by 4 sample variables ]
-#tax_table()   Taxonomy Table:    [ 1163 taxa by 7 taxonomic ranks ]
+#tax_table()   Taxonomy Table:    [ 1162 taxa by 7 taxonomic ranks ]
 
 # remove all non-bacteria
 ps_clean <- subset_taxa(ps_nochlor, (Kingdom == "Bacteria"))
 ps_clean
 
 #phyloseq-class experiment-level object
-#otu_table()   OTU Table:         [ 1150 taxa and 15 samples ]
+#otu_table()   OTU Table:         [ 1149 taxa and 15 samples ]
 #sample_data() Sample Data:       [ 15 samples by 4 sample variables ]
-#tax_table()   Taxonomy Table:    [ 1150 taxa by 7 taxonomic ranks ]
+#tax_table()   Taxonomy Table:    [ 1149 taxa by 7 taxonomic ranks ]
 
 ## total number of contam above removed
 contam_tot <- dim(phylo_sp@otu_table)[[2]] - dim(ps_clean@otu_table)[[2]]
 contam_tot
-#82
+#83
 ```
 
 ### Remove neg control contamination
@@ -540,9 +540,9 @@ neg_contam <- table(contamdf_freq$contaminant)
 #head(which(contamdf_freq$contaminant)) # which ASVs are being identified as contaminants 
 neg_contam
 #FALSE  TRUE 
-# 1130    20 
+# 1129    20 
 which(contamdf_freq$contaminant)
-#[1]  27  36  44  61  74  80  91  98 103 139 166 199 204 219 250 271 272 331 428 683
+#[1]  27  36  44  61  74  80  91  98 103 139 166 199 204 219 250 271 272 331 428 682
 ```
 
 Removing contaminants
@@ -573,9 +573,9 @@ ps_cleaner <- subset_samples(ps_clean1, (sample_id != "blank"))
 
 ps_cleaner 
 # phyloseq-class experiment-level object
-#otu_table()   OTU Table:         [ 1130 taxa and 10 samples ]
+#otu_table()   OTU Table:         [ 1129 taxa and 10 samples ]
 #sample_data() Sample Data:       [ 10 samples by 5 sample variables ]
-#tax_table()   Taxonomy Table:    [ 1130 taxa by 7 taxonomic ranks ]
+#tax_table()   Taxonomy Table:    [ 1129 taxa by 7 taxonomic ranks ]
 ```
 
 ### Blast NCBI
@@ -619,12 +619,12 @@ seq_trim_allinfo <- purgeOutliers(seq_formcmc, count.columns = 3:1130, sampleZcu
 #character(0)
 #[1] "zscores:"
 #named numeric(0)
-#[1] "OTUs passing frequency cutoff  1e-04 : 664"
+#[1] "OTUs passing frequency cutoff  1e-04 : 663"
 #[1] "OTUs with counts in 0.02 of samples:"
 
 #TRUE 
-# 664 
-seq_trim <- seq_trim_allinfo[,3:664] 
+# 663 
+seq_trim <- seq_trim_allinfo[,3:663] 
 
 
 #remake phyloseq objects
@@ -633,9 +633,9 @@ phylo_trim <- phyloseq(otu_table(seq_trim, taxa_are_rows=FALSE),
                          tax_table(taxa2))
 phylo_trim 
 #phyloseq-class experiment-level object
-#otu_table()   OTU Table:         [ 662 taxa and 10 samples ]
+#otu_table()   OTU Table:         [ 661 taxa and 10 samples ]
 #sample_data() Sample Data:       [ 10 samples by 5 sample variables ]
-#tax_table()   Taxonomy Table:    [ 662 taxa by 8 taxonomic ranks ]
+#tax_table()   Taxonomy Table:    [ 661 taxa by 8 taxonomic ranks ]
 
 # we're using taxa2 instead of taxa_clean because her taxa_clean is from rareified data that we didn't do
 
@@ -688,7 +688,7 @@ rarecurve(seqtab_trim_rare, step = 20, sample = raremax_trim, col = "blue", cex 
 phylo_trim_rare <- phyloseq(otu_table(seqtab_trim_rare, taxa_are_rows=FALSE), 
                     sample_data(samdf_trim), 
                     tax_table(taxa2))
-phylo_trim_rare # 662 taxa remain
+phylo_trim_rare # 661 taxa remain
 
 ## Save the trimmed and rarefied data
 save(phylo_trim_rare, seqtab_trim_rare, samdf_trim, taxa2, file = "phylo_trim_rare.Rdata")
@@ -711,7 +711,7 @@ metageneassist_input <- metageneassist_input %>%
   distinct(Taxa, .keep_all = TRUE)%>%
   column_to_rownames(var="Taxa")
 nrow(metageneassist_input)
-#[1] 356
+#[1] 351
 
 metageneassist_input <- as.data.frame(t(metageneassist_input)) %>%
   rownames_to_column(var="SampleID")
@@ -730,10 +730,10 @@ meta_input$sym_state <- as.factor(meta_input$sym_state)
 # Example paper that uses metagenassist: https://www.frontiersin.org/articles/10.3389/fmars.2016.00234/full#B3
 # Metagenassist paper: https://academic.oup.com/nar/article/40/W1/W88/1078994
 
-write.csv(metageneassist_input, "metageneassist_input_043023.csv", quote=F,row.names = FALSE)
-write.csv(meta_input, "meta_no_blank.csv", quote=F,row.names = FALSE)
+write.csv(metageneassist_input, "./files/metageneassist_input_043023.csv", quote=F,row.names = FALSE)
+write.csv(meta_input, "./files/meta_no_blank.csv", quote=F,row.names = FALSE)
 
-write.table(seqtab_trim_rare_t, file="seqtab_trim_rare_042723.tsv", quote=F, sep="\t", row.names = FALSE)
+write.table(seqtab_trim_rare_t, file="./files/seqtab_trim_rare_042723.tsv", quote=F, sep="\t", row.names = FALSE)
 ```
 There was no significant functional enrichment by sym state with METAGENassist 
 
@@ -752,25 +752,25 @@ trim_rare_rel_phyla <- plot_bar(phylo_trim_rare_rel, x = "sample_id", fill="Phyl
   geom_bar(stat="identity") +
   theme_bw() +
   theme(panel.grid = element_blank()) +
-  scale_fill_manual(values = colorRampPalette(brewer.pal(11, "Paired"))(28)) +
-  scale_colour_manual(values = colorRampPalette(brewer.pal(11, "Paired"))(28)) +
+  scale_fill_manual(values = colorRampPalette(brewer.pal(11, "Paired"))(30)) +
+  scale_colour_manual(values = colorRampPalette(brewer.pal(11, "Paired"))(30)) +
   facet_wrap(~sym_state, ncol = 2, scale="free") +
   ggtitle("Rarefied total ASVs (relative abundance)")
 #ggplotly(trim_rare_rel_phyla)
 #plotly creates very handy explorable graph
 #or you can just plot it
 trim_rare_rel_phyla
-# saved as rarefied_total_ASVs_abundance.pdf as landscape 8x5.5
+# saved as rarefied_total_ASVs_abundance_phyla.pdf as landscape 8x5.5
 trim_rare_rel_phyla_sym <- plot_bar(phylo_trim_rare_rel, x = "sym_state", fill="Phylum")+
   geom_bar(stat="identity") +
   theme_bw() +
   theme(panel.grid = element_blank()) +
-  scale_fill_manual(values = colorRampPalette(brewer.pal(11, "Paired"))(28)) +
-  scale_colour_manual(values = colorRampPalette(brewer.pal(11, "Paired"))(28)) +
+  scale_fill_manual(values = colorRampPalette(brewer.pal(11, "Paired"))(30)) +
+  scale_colour_manual(values = colorRampPalette(brewer.pal(11, "Paired"))(30)) +
   facet_wrap(~sym_state, ncol = 2, scale="free") +
   ggtitle("Rarefied total ASVs (relative abundance)")
 trim_rare_rel_phyla_sym
-#trim_rare_rel_phyla_sym.pdf as 8x5
+#trim_rare_rel_phyla_sym.pdf as 6x5
 
 ## Can explore specific phylum, like, for example selecting just Phylum Proteobacteria 
 phylo_proteo <- subset_taxa(phylo_trim_rare, Phylum %in% "Proteobacteria")
@@ -795,8 +795,8 @@ bact_plot <- plot_bar(phylo_bact_rel, x = "sample_id", fill = "Order")+
   geom_bar(stat="identity") +
   theme_bw() +
   theme(panel.grid = element_blank()) +
-  scale_fill_manual(values = colorRampPalette(brewer.pal(11, "Paired"))(47)) +
-  scale_colour_manual(values = colorRampPalette(brewer.pal(11, "Paired"))(47)) +
+  scale_fill_manual(values = colorRampPalette(brewer.pal(11, "Paired"))(8)) +
+  scale_colour_manual(values = colorRampPalette(brewer.pal(11, "Paired"))(8)) +
   facet_wrap(~ sym_state, ncol = 2, scale= "free") +
   ggtitle("Bacteroidota ASVs (relative abundance)")
 bact_plot
@@ -812,7 +812,7 @@ proteo_plot_sym <- plot_bar(phylo_proteo_rel, x = "sym_state", fill = "Order")+
   facet_wrap(~ sym_state, ncol = 2, scale= "free") +
   ggtitle("Proteobacteria ASVs (relative abundance)")
 proteo_plot_sym
-#saved as proteobacteria_ASV_abundance_sym.pdf as landscape 10x6
+#saved as proteobacteria_ASV_abundance_sym_o.pdf as landscape 10x6
 proteo_plot_sym_f <- plot_bar(phylo_proteo_rel, x = "sym_state", fill = "Family")+
   geom_bar(stat="identity") +
   theme_bw() +
@@ -833,7 +833,7 @@ bact_plot_sym <- plot_bar(phylo_bact_rel, x = "sym_state", fill = "Order")+
   facet_wrap(~ sym_state, ncol = 2, scale= "free") +
   ggtitle("Bacteroidota ASVs (relative abundance)")
 bact_plot_sym
-##saved as bacteroidota_ASV_abundance_sym.pdf as landscape 8x6
+##saved as bacteroidota_ASV_abundance_sym.pdf as landscape 6x6
 
 ###do proteo and bact by genet
 proteo_plot_gen <- plot_bar(phylo_proteo_rel, x = "genet", fill = "Order")+
@@ -878,8 +878,8 @@ all_anova <- anova(beta_all)
 all_anova
 #Response: Distances
           #Df  Sum Sq  Mean Sq F value Pr(>F)
-#Groups     1 0.002292 0.0022921  0.0864 0.7763
-#Residuals  8 0.212172 0.0265215    
+#Groups     1 0.002018 0.0020178  0.0764 0.7892
+#Residuals  8 0.211177 0.0263971 
 plot(beta_all) #saved as beta_dispersion_apo_sym.pdf
 boxplot(beta_all) # boxplot of the distances to centroid for each treatment; saved as distance_to_centroid.pdf
 
@@ -889,8 +889,8 @@ dist_all_gen <- betadisper(dist_all, samdf_all$genet)
 anova(dist_all_gen)
 #Response: Distances
 #          Df   Sum Sq  Mean Sq F value    Pr(>F)    
-#Groups     4 0.045684 0.011421 3.7525e+29 < 2.2e-16 ***
-#Residuals  5 0.000000 0.000000  
+#Groups     4 0.044661 0.011165 1.3699e+30 < 2.2e-16 ***
+#Residuals  5 0.000000 0.000000 
 plot(dist_all_gen)
 #saved as beta_dispersion_genet as 6x6
 #############come back to this
@@ -901,10 +901,10 @@ permutest(beta_all, pairwise = TRUE, permutations = 999) # not significant
 
 ### Multivariate stats (PERMANOVA)
 all_adonis <- adonis2(seq_all ~ sym_state, data = samdf_all, permutations = 1500)
-all_adonis # Pr(>F) = 0.952
+all_adonis # Pr(>F) = 0.9527
 
 all_adonis_gen <- adonis2(seq_all ~ genet, data = samdf_all, permutations = 1500)
-all_adonis_gen #Pr(>F) = 0.07328 .
+all_adonis_gen #Pr(>F) = 0.06129 .
 
 trt_col <- c("gray40", "#CC6600")
 gen_shape = c(15, 16, 17, 18, 8)
@@ -924,7 +924,7 @@ pcoa_all <- ggplot(data = pseq_rel_ord, aes(x = Axis.1, y = Axis.2, color = sym_
   ggtitle("All taxa (relative abundance)")
 pcoa_all #saved as relative_abundance_pca.pdf as 5x5
 
-#relative abundance = the percentage of the mircobiome that is made up by a specific ASV
+#relative abundance = the percentage of the microbiome that is made up by a specific ASV
 #not different between apo and sym
 ```
 
