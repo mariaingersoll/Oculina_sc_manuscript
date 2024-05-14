@@ -5,3 +5,4 @@
 *.fastq
 *.fa.gz
 *.fastq.gz
+*.fasta
