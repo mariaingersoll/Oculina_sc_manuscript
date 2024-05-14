@@ -98,7 +98,7 @@ C6_16S_R1.fastq     8499      8110. F6_apo
 
 Set path to fastq files
 ```{r}
-path <- "/Users/mariaingersoll/Desktop/BU_Research/Davies-Gilmore/16S_Oculina_22" # CHANGE ME to the directory containing the fastq files after unzipping.
+path <- "/Users/mariaingersoll/Desktop/BU_Research/Davies-Gilmore/Oculina_sc_Manuscript/Oculina_sc_Manuscript/16S/fastq" # CHANGE ME to the directory containing the fastq files after unzipping.
 fns <- list.files(path)
 #Let's make sure that all of our files are there
 fns
@@ -405,7 +405,7 @@ write.csv(track_reads,file="ReadFilterStats_AllData_final.csv",row.names=TRUE,qu
 
 It is common at this point, especially in 16S/18S/ITS amplicon sequencing, to assign taxonomy to the sequence variants. The DADA2 package provides a native implementation of the naive Bayesian classifier method for this purpose. The `assignTaxonomy` function takes as input a set of sequences to be classified and a training set of reference sequences with known taxonomy, and outputs taxonomic assignments with at least `minBoot` bootstrap confidence.
 
-The dada2 package GitHub maintains the most updated versions of the [Silva databases.](https://benjjneb.github.io/dada2/training.html), but I downloaded the databases from the associated [Zenodo](https://zenodo.org/record/4587955#.YuBdCS-cbOQ). The versions in this GitHub repository, used here, were last updated on 26 July 2022.
+The dada2 package GitHub maintains the most updated versions of the [Silva databases.](https://benjjneb.github.io/dada2/training.html), but I downloaded the databases from the associated [Zenodo](https://zenodo.org/record/4587955#.YuBdCS-cbOQ). The versions in this GitHub repository, used here, were downloaded on 13 May 2024.
 
 ```{r}
 silva_path <- "~/Desktop/BU_Research/Davies-Gilmore/16S_Oculina_22/silva_nr99_v138.1_train_set.fa.gz" 
