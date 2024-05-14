@@ -934,7 +934,7 @@ Alpha Diversity
 phylo_sp # 1232 taxa and 15 samples
 
 ## Load the trimmed and rarefied phylo objects
-phylo_trim_rare # 662 rarefied and trimmed across all 10 samples
+phylo_trim_rare # 661 rarefied and trimmed across all 10 samples
 
 #generate diversity metrics
 alpha_df <- data.frame(estimate_richness(phylo_trim_rare, split = TRUE, measures=c("Shannon", "InvSimpson", "Observed"))) # calculate shannon diversity, simpson, and observed species richness
@@ -967,7 +967,7 @@ simp_lm <- lmer((1 / InvSimpson) ~ sym_state + (1|genet), data = alpha_df_div)
 # need to transform data (inverse) to meet model assumptions
 
 # checking the model
-check_normality(simp_lm) #OK: residuals appear as normally distributed (p = 0.643)
+check_normality(simp_lm) #OK: residuals appear as normally distributed (p = 0.449)
 check_heteroscedasticity(simp_lm) #Heteroscedasticity (non-constant error variance) detected (p < .001)
 check_model(simp_lm) # definitely funky in all of the checks
 
@@ -976,19 +976,18 @@ simp_pval <- Anova(simp_lm) #NOT SIG
 summary(simp_lm)
 #Random effects:
 # Groups   Name        Variance Std.Dev.
-# genet    (Intercept) 0.002887 0.05373 
-# Residual             0.001008 0.03174 
+# genet    (Intercept) 0.003053 0.05525 
+# Residual             0.001112 0.03334 
 #Number of obs: 10, groups:  genet, 5
 
 #Fixed effects:
 #             Estimate Std. Error t value
-#(Intercept)   0.07788    0.02791   2.790
-#sym_statesym  0.02439    0.02008   1.215
+#(Intercept)   0.07879    0.02886   2.730
+#sym_statesym  0.02406    0.02109   1.141
 
 #Correlation of Fixed Effects:
 #            (Intr)
-#sym_statsym -0.360
-
+#sym_statsym -0.365
 
 #kruskal.test(simp_lm)
 ##but because our assumptions of normality were not met, let's try nonparametric alternatives: https://bookdown.org/pingapang9/linear_models_bookdown/chap-nonpar2.html
@@ -1028,7 +1027,7 @@ shan_lm <- lmer(log(Shannon) ~ sym_state + (1|genet), data = alpha_df_div)
 
 
 ## checking the model
-check_normality(shan_lm) # OK: residuals appear as normally distributed (p = 0.562).
+check_normality(shan_lm) # OK: residuals appear as normally distributed (p = 0.605).
 check_heteroscedasticity(shan_lm) # Heteroscedasticity (non-constant error variance) detected (p < .001).
 check_model(shan_lm) # overview: looks better than the simpsons but still funky
 
@@ -1037,18 +1036,18 @@ shan_pval <- Anova(shan_lm) #NOT SIG
 summary(shan_lm)
 #Random effects:
 # Groups   Name        Variance Std.Dev.
-# genet    (Intercept) 0.02697  0.1642  
-# Residual             0.01116  0.1056  
+# genet    (Intercept) 0.02805  0.1675  
+# Residual             0.01185  0.1089  
 #Number of obs: 10, groups:  genet, 5
 
 #Fixed effects:
 #             Estimate Std. Error t value
-#(Intercept)   1.25748    0.08733  14.400
-#sym_statesym -0.04338    0.06682  -0.649
+#(Intercept)   1.25670    0.08933  14.067
+#sym_statesym -0.04172    0.06886  -0.606
 
 #Correlation of Fixed Effects:
 #            (Intr)
-#sym_statsym -0.383
+#sym_statsym -0.385
 
 ```
 
@@ -1073,7 +1072,7 @@ rich_lm <- lmer((1 / Observed) ~ sym_state + (1|genet), data = alpha_df_div)
 
 
 ## checking the model
-check_normality(rich_lm) # OK: residuals appear as normally distributed (p = 0.145).
+check_normality(rich_lm) # OK: residuals appear as normally distributed (p = 0.077).
 check_heteroscedasticity(rich_lm) # Heteroscedasticity (non-constant error variance) detected (p < .001).
 check_model(rich_lm) # overview: most are funky
 
@@ -1082,18 +1081,18 @@ rich_pval <- Anova(rich_lm) #NOT SIG
 summary(rich_lm)
 #Random effects:
 # Groups   Name        Variance  Std.Dev.
-# genet    (Intercept) 3.057e-06 0.001748
-# Residual             2.698e-06 0.001642
+# genet    (Intercept) 2.628e-06 0.001621
+# Residual             2.944e-06 0.001716
 #Number of obs: 10, groups:  genet, 5
 
 #Fixed effects:
 #               Estimate Std. Error t value
-#(Intercept)   0.0089601  0.0010728   8.352
-#sym_statesym -0.0004892  0.0010388  -0.471
+#(Intercept)   0.0089644  0.0010557   8.492
+#sym_statesym -0.0005611  0.0010852  -0.517
 
 #Correlation of Fixed Effects:
 #            (Intr)
-#sym_statsym -0.484
+#sym_statsym -0.514
 ```
 
 Evenness
@@ -1115,7 +1114,7 @@ even_plot <- ggplot(alpha_df_div, aes(x=sym_state, y=Evenness, group=sym_state, 
 even_lm <- lmer((Evenness) ~ sym_state + (1|genet), data = alpha_df_div)
 
 ## checking the model
-check_normality(even_lm) #OK: residuals appear as normally distributed (p = 0.648).
+check_normality(even_lm) #OK: residuals appear as normally distributed (p = 0.543).
 check_heteroscedasticity(even_lm) # Heteroscedasticity (non-constant error variance) detected (p < .001).
 check_model(even_lm) # overview: funky
 
@@ -1124,18 +1123,18 @@ even_pval <- Anova(even_lm)
 summary(even_lm)
 #Random effects:
 # Groups   Name        Variance Std.Dev.
-# genet    (Intercept) 0.008421 0.09176 
-# Residual             0.003583 0.05986 
+# genet    (Intercept) 0.008888 0.09428 
+# Residual             0.003941 0.06277 
 #Number of obs: 10, groups:  genet, 5
 
 #Fixed effects:
 #             Estimate Std. Error t value
-#(Intercept)   0.74652    0.04900  15.236
-#sym_statesym -0.03485    0.03786  -0.921
+#(Intercept)   0.74627    0.05065  14.733
+#sym_statesym -0.03409    0.03970  -0.859
 
 #Correlation of Fixed Effects:
 #            (Intr)
-#sym_statsym -0.386
+#sym_statsym -0.392
 ```
 
 Plot all alpha div metrics together
