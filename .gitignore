@@ -6,3 +6,4 @@
 *.fa.gz
 *.fastq.gz
 *.fasta
+*.rds
