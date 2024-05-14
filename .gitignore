@@ -2,5 +2,5 @@
 .Rhistory
 .RData
 .Ruserdata
-.fastq
-.fa.gz
+*.fastq
+*.fa.gz
