@@ -1,3 +1,4 @@
-.fastq
-.Rdata
-.fa.gz
+*.fastq
+*.Rdata
+*.fa.gz
+.DS_Store
