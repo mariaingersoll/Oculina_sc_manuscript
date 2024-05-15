@@ -5,8 +5,8 @@ date: "2023-05-03"
 ---
 ```{r}
 
-setwd("~/Desktop/BU_Research/Davies-Gilmore/Oculina")
-knitr::opts_knit$set(root.dir ="~/Desktop/BU_Research/Davies-Gilmore/Oculina")
+setwd("~/Desktop/BU_Research/Davies-Gilmore/Oculina_sc_Manuscript/Oculina_sc_Manuscript/Phys")
+knitr::opts_knit$set(root.dir ="~/Desktop/BU_Research/Davies-Gilmore/Oculina_sc_Manuscript/Oculina_sc_Manuscript/Phys")
 ```
 
 Load in whatever libraries you need
@@ -26,7 +26,7 @@ library("car")
 
 First, we are going to plot the sym count to Surface Area of apos and syms
 ```{r}
-sym_SA <- read.table("Oculina_Sym_SA.txt", header=T)
+sym_SA <- read.table("./files/Oculina_Sym_SA.txt", header=T)
 head(sym_SA)
 
 sym_SA_plot <- ggplot(data = sym_SA, aes(x = sym_state, y = Cells_per_mm2)) + 
@@ -49,7 +49,7 @@ Calculate mean and sd for apo and sym
 sym_SA_apo <- sym_SA %>%
   subset(sym_state=="Apo")
 mean_apo <- mean(sym_SA_apo$Cells_per_mm2)
-#30.170224411
+#30.17022
 sd_apo <- sd(sym_SA_apo$Cells_per_mm2)
 #43.42565
 
@@ -124,5 +124,3 @@ kruskal.test(Cells_per_mm2 ~ sym_state, data = sym_SA)
 #Kruskal-Wallis chi-squared = 14.672, df = 1, p-value = 0.0001279
 ```
 
-
-Next you're going to analyze the respirometry data, which you can normalize to the sym count per mm2 data somehow too
