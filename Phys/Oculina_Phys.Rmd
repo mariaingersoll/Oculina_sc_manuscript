@@ -1,0 +1,128 @@
+---
+title: "Oculina_Phys"
+output: html_document
+date: "2023-05-03"
+---
+```{r}
+
+setwd("~/Desktop/BU_Research/Davies-Gilmore/Oculina")
+knitr::opts_knit$set(root.dir ="~/Desktop/BU_Research/Davies-Gilmore/Oculina")
+```
+
+Load in whatever libraries you need
+```{r}
+library("dplyr")                  
+library("RColorBrewer")             
+library("gplots")                   
+library("tidyverse")
+library("vegan")                    
+library("ggplot2")                 
+library("ggrepel") 
+library("ggtext")
+library("ggpubr")
+library("reshape2")
+library("car")
+```
+
+First, we are going to plot the sym count to Surface Area of apos and syms
+```{r}
+sym_SA <- read.table("Oculina_Sym_SA.txt", header=T)
+head(sym_SA)
+
+sym_SA_plot <- ggplot(data = sym_SA, aes(x = sym_state, y = Cells_per_mm2)) + 
+  geom_point(shape=16, color="black", alpha=0.4, position = position_jitter(width = 0.1, height=0)) +
+  stat_summary(fun.data = mean_sdl, fun.args = list(mult = 1), geom = "errorbar", width = 0, colour = "black") +
+  stat_summary(fun = "mean", size = 0.8, shape=21, alpha=0.8, colour = c("black", "black"), fill=c("gray40", "#CC6600")) +
+  theme(panel.background = element_rect(color="black", fill="white"),
+        axis.text = element_text(colour="black", size=10), 
+        axis.title.x = ggtext::element_markdown(face="bold", size=12),
+        axis.title.y = ggtext::element_markdown(face="bold",size=12)) +
+  ylab("Algal cells per mm2")+
+  xlab("Symbiotic State")+
+  labs(fill="sym_state")
+sym_SA_plot
+#saved as portrait 5.5x4 sym_count_per_SA_050223.pdf
+```
+
+Calculate mean and sd for apo and sym
+```{r}
+sym_SA_apo <- sym_SA %>%
+  subset(sym_state=="Apo")
+mean_apo <- mean(sym_SA_apo$Cells_per_mm2)
+#30.170224411
+sd_apo <- sd(sym_SA_apo$Cells_per_mm2)
+#43.42565
+
+sym_SA_sym <- sym_SA %>%
+  subset(sym_state=="Sym")
+mean_sym <- mean(sym_SA_sym$Cells_per_mm2)
+#13677.69
+sd_sym <- sd(sym_SA_sym$Cells_per_mm2)
+#6203.73
+```
+
+
+AOV
+```{r}
+summary(sym_SA)
+head(sym_SA)
+sym_sa_aov <- aov(Cells_per_mm2~sym_state, data=sym_SA)
+summary(sym_sa_aov)
+#            Df    Sum Sq   Mean Sq F value   Pr(>F)    
+#sym_state    1 931273779 931273779   48.39 1.69e-06 ***
+#Residuals   18 346393351  19244075
+```
+
+test assumptions for aov: http://www.sthda.com/english/wiki/one-way-anova-test-in-r
+```{r}
+#homogeneity of variances
+plot(sym_sa_aov, 1)
+#three outliers
+#so check their significance as outliers
+leveneTest(Cells_per_mm2 ~ sym_state, data = sym_SA)
+#       Df F value  Pr(>F)   
+#group  1  12.398 0.00244 **
+#      18                      
+#From leveneTest we can see that the p-value is less than the significance level of 0.05. This means that there is evidence to suggest that the variance across groups is statistically significantly different. Therefore, we cannot assume the homogeneity of variances in the different treatment groups.
+
+#check normality
+plot(sym_sa_aov, 2)
+# Extract the residuals
+aov_residuals <- residuals(object = sym_sa_aov)
+# Run Shapiro-Wilk test
+shapiro.test(x = aov_residuals )
+#Shapiro-Wilk normality test
+#data:  aov_residuals
+#W = 0.80562, p-value = 0.001049
+
+#normality is violated
+
+
+### so run some other tests because normality is violated and our homogenity of variances is violated:
+
+#ANOVA test with no assumption of equal variances
+oneway.test(Cells_per_mm2 ~ sym_state, data = sym_SA)
+#	One-way analysis of means (not assuming equal variances)
+#data:  Cells_per_mm2 and sym_state
+#F = 48.393, num df = 1.0000, denom df = 9.0009, p-value = 6.633e-05
+
+#Pairwise t-tests with no assumption of equal variances
+pairwise.t.test(sym_SA$Cells_per_mm2, sym_SA$sym_state,
+                 p.adjust.method = "BH", pool.sd = FALSE)
+#	Pairwise comparisons using t tests with non-pooled SD 
+#data:  sym_SA$Cells_per_mm2 and sym_SA$sym_state 
+#    Apo    
+#Sym 6.6e-05
+```
+
+but because assumptions of normality are not met, let's also try Kruskal-Wallis rank sum test, which is non-parametric alternative to one-way ANOVA
+```{r}
+kruskal.test(Cells_per_mm2 ~ sym_state, data = sym_SA)
+#	Kruskal-Wallis rank sum test
+
+#data:  Cells_per_mm2 by sym_state
+#Kruskal-Wallis chi-squared = 14.672, df = 1, p-value = 0.0001279
+```
+
+
+Next you're going to analyze the respirometry data, which you can normalize to the sym count per mm2 data somehow too
