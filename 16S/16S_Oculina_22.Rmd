@@ -188,11 +188,16 @@ rbind(FWD.ForwardReads = sapply(FWD.orients, primerHits, fn = fnFs_filtN[[4]]),
 
 ```
 
+```{r}
+
+```
+
+
 ### View example quality plots
 
 Viewing the quality of 2 of the forward samples and 2 reverse samples
 ```{r}
-fnFs_cut <- file.path(path, "filtN", paste0(sample_names, "_16S_R1.fastq")) # 16S path with the subdirectory 'cutadapt' then the sample names
+fnFs_cut <- file.path(path, "filtN", paste0(sample_names, "_16S_R1.fastq")) # 16S path with the sample names
 fnFs_cut
 fnRs_cut <- file.path(path, "filtN", paste0(sample_names, "_16S_R2.fastq"))
 
