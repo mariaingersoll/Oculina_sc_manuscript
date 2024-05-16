@@ -461,7 +461,7 @@ It is common at this point, especially in 16S/18S/ITS amplicon sequencing, to as
 The dada2 package GitHub maintains the most updated versions of the [Silva databases.](https://benjjneb.github.io/dada2/training.html), but I downloaded the databases from the associated [Zenodo](https://zenodo.org/record/4587955#.YuBdCS-cbOQ). The versions in this GitHub repository, used here, were downloaded on 13 May 2024.
 
 ```{r}
-silva_path <- "~/Desktop/BU_Research/Davies-Gilmore/Oculina_sc_Manuscript/Oculina_sc_Manuscript/16S/silva/silva_nr99_v138.1_train_set.fa.gz" 
+silva_path <- "/projectnb/davieslab/mingers/Oculina_16S_2022/Oculina_sc_manuscript/16S/silva/silva_nr99_v138.1_train_set.fa.gz" 
 taxa <- assignTaxonomy(seqtab_nochim, silva_path, multithread=TRUE)
 head(taxa)
 ```
@@ -469,7 +469,7 @@ head(taxa)
 Extensions: The dada2 package also implements a method to make species level assignments based on exact matching between ASVs and sequenced reference strains. Recent analysis suggests that exact matching (or 100% identity) is the only appropriate way to assign species to 16S gene fragments. Currently, species-assignment training fastas are available for the Silva and RDP 16S databases. To follow the optional species addition step, download the silva_species_assignment_v138.1.fa.gz file, and place it in the directory with the fastq files.
 
 ```{r}
-silva_sp_path <- "~/Desktop/BU_Research/Davies-Gilmore/Oculina_sc_Manuscript/Oculina_sc_Manuscript/16S/silva/silva_species_assignment_v138.1.fa.gz"
+silva_sp_path <- "/projectnb/davieslab/mingers/Oculina_16S_2022/Oculina_sc_manuscript/16S/silva/silva_species_assignment_v138.1.fa.gz"
 taxa_sp <- addSpecies(taxa, silva_sp_path)
 
 ## Save objects to save time running (but will need to rerun if making upstream adjustments)
