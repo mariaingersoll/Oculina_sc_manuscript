@@ -5,7 +5,7 @@ date: '2022-08-11'
 ---
 
 ```{r}
-setwd("~/Desktop/BU_Research/Davies-Gilmore/Oculina_sc_Manuscript/Oculina_sc_Manuscript/16S")
+setwd("/projectnb/davieslab/mingers/Oculina_16S_2022/Oculina_sc_manuscript/16S")
 ```
 
 ```{r eval=FALSE, include=FALSE}
@@ -98,7 +98,8 @@ C6_16S_R1.fastq     8499      8110. F6_apo
 
 Set path to fastq files
 ```{r}
-path <- "/Users/mariaingersoll/Desktop/BU_Research/Davies-Gilmore/Oculina_sc_Manuscript/Oculina_sc_Manuscript/16S/fastq" # CHANGE ME to the directory containing the fastq files after unzipping.
+#path <- "/Users/mariaingersoll/Desktop/BU_Research/Davies-Gilmore/Oculina_sc_Manuscript/Oculina_sc_Manuscript/16S/fastq" # CHANGE ME to the directory containing the fastq files after unzipping.
+path <- "/projectnb/davieslab/mingers/Oculina_16S_2022/Oculina_sc_manuscript/16S/fastq"
 fns <- list.files(path)
 #Let's make sure that all of our files are there
 fns
@@ -188,8 +189,57 @@ rbind(FWD.ForwardReads = sapply(FWD.orients, primerHits, fn = fnFs_filtN[[4]]),
 
 ```
 
-```{r}
+The following must be performed on the scc because requires python pairing that I couldn't set up on my computer
 
+Use cutadapt to remove the leftover primers that you can still see in the above code output
+```{r}
+### Install cutadapt to local computer
+#[mingers@scc-pg1 Oculina_sc_manuscript]$ module load miniconda
+#[mingers@scc-pg1 Oculina_sc_manuscript]$ conda create -n cutadapt cutadapt
+#[mingers@scc-pg1 Oculina_sc_manuscript]$ conda activate cutadapt
+#(cutadapt)[mingers@scc-pg1 Oculina_sc_manuscript]$ cutadapt --version
+#4.8
+#(cutadapt)[mingers@scc-pg1 Oculina_sc_manuscript]$ which cutadapt
+#/projectnb/davieslab/mingers/.conda/envs/cutadapt/bin/cutadapt
+
+cutadapt = "/projectnb/davieslab/mingers/.conda/envs/cutadapt/bin/cutadapt"
+system2(cutadapt, args = "--version")
+
+## look for cutadapt path and create one if it doesn't exist
+path_cut <- file.path(path, "cutadapt")
+if(!dir.exists(path_cut)) dir.create(path_cut)
+
+## create list of forward/reverse samples to put the cutadapt samples
+fnFs_cut <- file.path(path_cut, basename(fnFs)) # 16S path with the subdirectory 'cutadapt' then the sample names
+fnRs_cut <- file.path(path_cut, basename(fnRs))
+
+# forward/reverse complements of primers
+FWD_RC <- dada2:::rc(FWD)
+REV_RC <- dada2:::rc(REV)
+
+R1_flags <- paste("-g", FWD, "-a", REV_RC) # Trim FWD and the reverse-complement of REV off of R1 (forward reads)
+R2_flags <- paste("-G", REV, "-A", FWD_RC) # Trim REV and the reverse-complement of FWD off of R2 (reverse reads)
+
+# Run Cutadapt
+for(i in seq_along(fnFs)) {
+  system2(cutadapt, args = c(R1_flags, R2_flags, "-n", 2, # -n 2 required to remove FWD and REV from reads
+                             "-o", fnFs_cut[i], "-p", fnRs_cut[i], # output files
+                             fnFs_filtN[i], fnRs_filtN[i])) # input files
+}
+
+#towards the beginning
+rbind(FWD.ForwardReads = sapply(FWD.orients, primerHits, fn = fnFs_cut[[1]]), 
+      FWD.ReverseReads = sapply(FWD.orients, primerHits, fn = fnRs_cut[[1]]), 
+      REV.ForwardReads = sapply(REV.orients, primerHits, fn = fnFs_cut[[1]]), 
+      REV.ReverseReads = sapply(REV.orients, primerHits, fn = fnRs_cut[[1]]))
+
+#at the end
+rbind(FWD.ForwardReads = sapply(FWD.orients, primerHits, fn = fnFs_cut[[4]]), 
+      FWD.ReverseReads = sapply(FWD.orients, primerHits, fn = fnRs_cut[[4]]), 
+      REV.ForwardReads = sapply(REV.orients, primerHits, fn = fnFs_cut[[4]]), 
+      REV.ReverseReads = sapply(REV.orients, primerHits, fn = fnRs_cut[[4]]))
+
+# no more primers were detected after this cutadapt step
 ```
 
 
@@ -197,9 +247,9 @@ rbind(FWD.ForwardReads = sapply(FWD.orients, primerHits, fn = fnFs_filtN[[4]]),
 
 Viewing the quality of 2 of the forward samples and 2 reverse samples
 ```{r}
-fnFs_cut <- file.path(path, "filtN", paste0(sample_names, "_16S_R1.fastq")) # 16S path with the sample names
+fnFs_cut <- file.path(path, "cutadapt", paste0(sample_names, "_16S_R1.fastq")) # 16S path in subdirectory cutadapt with the sample names
 fnFs_cut
-fnRs_cut <- file.path(path, "filtN", paste0(sample_names, "_16S_R2.fastq"))
+fnRs_cut <- file.path(path, "cutadapt", paste0(sample_names, "_16S_R2.fastq"))
 
 ## Plot 2 samples for examples:
 plotQualityProfile(fnFs_cut[1:2])
@@ -211,7 +261,7 @@ plotQualityProfile(fnRs_cut[1:2])
 Save quality control plots of forward and reverse samples, can remove blanks if you want
 ```{r}
 #c <- c(1,2,3,5,6,8,12,13,14,15,16,17)
-plotQualityProfile(fnFs_cut)
+plotQualityProfile(fnFs_cut[c(1,2,3,6,10,11,12,13,14,15)]) #sample 15 giving me issues in the view
 plotQualityProfile(fnRs_cut)
 ```
 
@@ -242,28 +292,26 @@ filt_out <- filterAndTrim(fnFs_cut, filtFs, fnRs_cut, filtRs,
                      multithread = TRUE) # On Windows set multithread = FALSE
 filt_out
  #                 reads.in reads.out
-#A5_16S_R1.fastq    21357     20664
-#A6_16S_R1.fastq    21478     20700
-#B6_16S_R1.fastq    10073      9400
-#C4_16S_R1.fastq     1009       963 blank
-#D4_16S_R1.fastq      858       688 blank
+#A5_16S_R1.fastq    21357     20661
+#A6_16S_R1.fastq    21478     20694
+#B6_16S_R1.fastq    10073      9397
+#C4_16S_R1.fastq     1009       962
+#D4_16S_R1.fastq      858       688
 #D5_16S_R1.fastq    13139     12756
-#E4_16S_R1.fastq     2407      2259 blank
-#E6_16S_R1.fastq     4624      4474 blank
-#E7_16S_R1.fastq    10646     10406 blank
-#F4_16S_R1.fastq    14345     13808
+#E4_16S_R1.fastq     2407      2258
+#E6_16S_R1.fastq     4624      4474
+#E7_16S_R1.fastq    10646     10405
+#F4_16S_R1.fastq    14345     13806
 #F5_16S_R1.fastq    13400     13083
-#G4_16S_R1.fastq    21389     20679
-#G5_16S_R1.fastq    65019     63666
-#H4_16S_R1.fastq    14825     14497
-#H5_16S_R1.fastq    13305     12932
-
-####this is where I pulled the "mean depth of coverage of XX +/- XX"
+#G4_16S_R1.fastq    21389     20678
+#G5_16S_R1.fastq    65019     63664
+#H4_16S_R1.fastq    14825     14496
+#H5_16S_R1.fastq    13305     12930
 
 # the percent of reads making it through the filter and trim step:
 filter_perc <- (colSums(filt_out)[2]/colSums(filt_out)[1] * 100) # 96.97%
 filter_perc
-# reads out 96.97245 
+# reads out 96.96236 
 
 # take a peak at your qc plots now
 plotQualityProfile(filtFs[1:2])
@@ -281,8 +329,9 @@ table(file.exists(filtFs))
 table(file.exists(filtRs))
 
 errF <- learnErrors(filtFs, multithread = TRUE)
+#48609440 total bases in 220952 reads from 15 samples will be used for learning the error rates.
 errR <- learnErrors(filtRs, multithread = TRUE)
-#220975 reads
+#46399920 total bases in 220952 reads from 15 samples will be used for learning the error rates.
 
 # visualize errors
 errF_plot <- plotErrors(errF, nominalQ = TRUE)
@@ -311,10 +360,9 @@ dadaFs <- dada(filtFs, err = errF, multithread = TRUE)
 dadaFs[[3]]
 
 #dada-class: object describing DADA2 denoising results
-#170 sequence variants were inferred from 4338 input unique sequences.
+#170 sequence variants were inferred from 4335 input unique sequences.
 #Key parameters: OMEGA_A = 1e-40, OMEGA_C = 1e-40, BAND_SIZE = 16
 
-######totaling the "unique sequences" from each of these for the "a total of XX sequences..."
 ```
 
 **Reverse sample inference**
@@ -324,7 +372,7 @@ dadaRs <- dada(filtRs, err = errR, multithread = TRUE)
 
 dadaRs[[3]]
 #dada-class: object describing DADA2 denoising results
-#187 sequence variants were inferred from 3842 input unique sequences.
+#187 sequence variants were inferred from 3839 input unique sequences.
 #Key parameters: OMEGA_A = 1e-40, OMEGA_C = 1e-40, BAND_SIZE = 16
 ```
 
