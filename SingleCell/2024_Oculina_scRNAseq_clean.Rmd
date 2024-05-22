@@ -1167,6 +1167,25 @@ gderm1_1to5_bar <- ggplot(data=gderm1_1to5_mark, aes(y=gene_symbol, x=avg_log2FC
 #saved as gderm1_1to5_bar as portrait 9x4
 ```
 
+do 1to7 for all 7 sig PCs
+```{r}
+gderm1_feats_1to7 <- c("CRA1B.3", "CO4A1.4", "RBP2A.2", "CO4A1.2", "TPM2", "MYPH.1", "MYS.2", "H90A1", "MLC2.2", "MRC1.11", "ACOD.2", "ACOT5", "DHE4", "VAB15", "ACBG2", "GLCM.1", "HNF4A", "VKT5", "H90A1", "SCR1.2", "SCR1.1", "CTHR1.75", "CTHR1.89", "FAT4", "HMCN2.32", "WNT7B.2", "C163A.4", "CO1A2.33", "K0319.1", "CALM.20", "MLC2.2", "NPTX2.21", "GILT", "CTRL.8", "RL32", "CYTB", "RL34", "AT5G", "ENDUA.1", "FP.3", "DPGN", "FLNA.2", "MYS.2", "CO4A1.2", "KAD9.1", "CES2", "RIMB1.2", "MYPH.1", "TPM2", "RBP2A.2", "CALM.20", "MYS.2", "MLP2", "Y1101", "MLC2.2", "TBX1A", "FLNA.2", "MMP25", "CMLO2.3", "CATZ", "TNIP1", "TRAF3.10", "CATL.6", "ZC21C", "ENKUR", "RIBC2", "CFA45", "GAS8", "LCA5", "CC146", "FHAD1.1", "NFIX", "CO4A1.2", "ATS2", "NELL2.1", "APLP", "FAT4.10", "MMP25", "USOM7.10", "HMCN2.32", "WNT7B.2", "VWA3A.2", "HMCN2.35", "ZC21C", "FHAD1.1", "PLMT", "PEAM1", "SERC", "METK1", "H90A1", "SAHH", "SERB", "GRP78", "NUCL", "CATZ", "CTHR1.75", "DNAJ1", "PAX7", "BAGS.1", "TNIP1", "SHH", "KLF5", "RL33A", "APLP", "HMCN1.29", "HMCN2.32", "SULF1", "ADAM9.1", "CILP1.6", "CO1A2.33", "HMCN2.35", "FP.3")
+
+gderm1_1to7_mark <- subset(gderm1_mark, gene_symbol %in% gderm1_feats_1to7)
+# add a column of NAs
+gderm1_1to7_mark$diffexpressed <- "ns"
+# if log2Foldchange > 0 set as "SYM"
+gderm1_1to7_mark$diffexpressed[gderm1_1to7_mark$avg_log2FC > 0] <- "sym"
+# if log2Foldchange < 0 set as "APO"
+gderm1_1to7_mark$diffexpressed[gderm1_1to7_mark$avg_log2FC < 0] <- "apo"
+gderm1_1to7_bar <- ggplot(data=gderm1_1to7_mark, aes(y=gene_symbol, x=avg_log2FC, fill=diffexpressed)) +
+  geom_bar(position="stack", stat="identity", color="black")+
+  scale_fill_manual(values=alpha(c("#CC6600", "gray70"), 1), breaks = c("sym", "apo"))+
+  theme_classic()
+#saved as gderm1_1to7_bar as portrait 9.5x4
+#86
+```
+
 Gastrodermis 2
 ```{r}
 gderm2 <- subset(oculina_named_h, idents = "Gastrodermis 2") 
