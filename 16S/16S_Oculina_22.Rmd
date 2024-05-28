@@ -5,7 +5,7 @@ date: '2022-08-11'
 ---
 
 ```{r}
-setwd("/projectnb/davieslab/mingers/Oculina_16S_2022/Oculina_sc_manuscript/16S")
+setwd("/projectnb/coral/MVI_Oculina/Oculina_sc_manuscript/16S")
 ```
 
 ```{r eval=FALSE, include=FALSE}
