@@ -41,7 +41,7 @@ sym_SA_plot <- ggplot(data = sym_SA, aes(x = sym_state, y = Cells_per_mm2)) +
   xlab("Symbiotic State")+
   labs(fill="sym_state")
 sym_SA_plot
-#saved as portrait 5.5x4 sym_count_per_SA_050223.pdf
+#saved as portrait 5x3 sym_count_per_SA_050223.pdf
 ```
 
 Calculate mean and sd for apo and sym

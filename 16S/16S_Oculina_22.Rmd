@@ -975,7 +975,7 @@ pcoa_all <- ggplot(data = pseq_rel_ord, aes(x = Axis.1, y = Axis.2, color = sym_
   labs(x = paste0("Axis 1 (", percvar_rel[1], "%)"),
        y = paste0("Axis 2 (", percvar_rel[2], "%)")) +
   ggtitle("All taxa (relative abundance)")
-pcoa_all #saved as relative_abundance_pca.pdf as 5x5
+pcoa_all #saved as relative_abundance_pca.pdf as 5x3 portrait
 
 #relative abundance = the percentage of the microbiome that is made up by a specific ASV
 #not different between apo and sym
