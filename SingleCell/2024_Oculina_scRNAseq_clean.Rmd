@@ -41,7 +41,7 @@ install.packages("cowplot")
 
 Set working directory, load packages
 ```{r}
-setwd("/projectnb/coral/MVI_Oculina/10X_22_ApV2/outs/fastq_path")
+setwd("/projectnb/coral/MVI_Oculina/Oculina_sc_manuscript/SingleCell")
 
 library(stringr)
 library(deldir)
@@ -200,7 +200,7 @@ Make reference files
 ----->>>>> THIS MIGHT CHANGE
 ```{r}
 # load gene annotations
-annotations <- read.delim("./new_Ap_ref/apoculata_GeneAnnotation_combined.txt", sep="\t", header=TRUE)
+annotations <- read.delim("./files/apoculata_GeneAnnotation_combined.txt", sep="\t", header=TRUE)
 head(annotations)
 
 #seq2iso <- annotations %>%
@@ -211,7 +211,7 @@ seq2iso <- annotations %>%
   mutate(gene=gsub("_", ".", gene)) %>%
   select(Protein_ID, gene)
 head(seq2iso)
-write.table(seq2iso, file="astrangia_seq2iso_new.txt", quote=F, sep="\t", row.names=FALSE)
+write.table(seq2iso, file="./files/astrangia_seq2iso_new.txt", quote=F, sep="\t", row.names=FALSE)
 
 gene = annotations %>%
   mutate(gene_symbol = gsub("_.*", "", Swiss.Prot_Hit)) %>%
@@ -232,7 +232,7 @@ seq2iso2gene <-
             ifelse( is.na(gene_symbol), gene , gene_symbol)) %>%
   mutate(gene_symbol = make.names(gene_symbol, unique = TRUE))
 head(seq2iso2gene)
-write.table(seq2iso2gene, file="astrangia_seq2iso2gene_new.txt", quote=F, sep="\t", row.names=FALSE)
+write.table(seq2iso2gene, file="./files/astrangia_seq2iso2gene_new.txt", quote=F, sep="\t", row.names=FALSE)
 
 gene_symbol_only <- seq2iso2gene[,c(2,3)] %>%
   column_to_rownames(var="gene")
@@ -248,6 +248,7 @@ proj_name_lead <- "Oculina_cat"
 dir.create(results_dir, showWarnings = F)
 proj_name <- paste0(results_dir, "/", proj_name_lead)
 
+#these are not on the github or in the Rproject
 F8.host.data <- Read10X(data.dir <- "/projectnb/coral/MVI_Oculina/10X_22_ApV2/outs/fastq_path/A3_host_cat_new/outs/filtered_feature_bc_matrix/")
 F1.host.data <- Read10X(data.dir <- "/projectnb/coral/MVI_Oculina/10X_22_ApV2/outs/fastq_path/S3_host_cat_new/outs/filtered_feature_bc_matrix/")
 
