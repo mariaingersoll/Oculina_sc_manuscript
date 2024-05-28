@@ -455,7 +455,7 @@ col_names <- c("p_val", "avg_log2FC", "pct.1", "pct.2", "p_val_adj", "cluster", 
 colnames(markers_fullnames) <- col_names
 markers_fullnames <- markers_fullnames %>%
   left_join(seq2iso2gene) %>%
-  write_csv(paste0(proj_name, '_clean_markers_new_logFC.5.csv'))
+  write_csv('./files/Oculina_clean_markers_new_logFC.5.csv')
 
 markers_fullnames <- read.csv(file.choose())
 head(markers_fullnames)
@@ -465,6 +465,8 @@ markers_strong <- markers_fullnames %>%
   filter(pct.1 > 0.1)
 
 nrow(markers_strong)
+#7371
+write_csv(markers_strong, "./files/SuppDataset_oculina_markers_strong.csv")
 ```
 
 ###Now work on identifying your cell types
