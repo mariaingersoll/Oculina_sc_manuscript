@@ -860,7 +860,7 @@ oc_markers_lvld %>% group_by(cluster) %>% top_n(10, avg_log2FC) -> top10_lev
 top10_lev
 nrow(top10_lev)
 #280
-#gives the top 10 genes for each cluster; 16 clusters
+#gives the top 10 genes for each cluster; 28 clusters
 saveRDS(top10_lev, paste0(proj_name, '_top10_releveled_named_040324.rds'))
 
 #do top20
@@ -921,6 +921,27 @@ plot3 <- DimPlot(immune_1, reduction = "umap", label = T, cols=c("#CC6699", "#33
 plot4 <- DimPlot(immune_1, reduction = "umap", label=F, order=c("sym", "apo"), group.by = "symstate", cols=c("gray40", "#CC6600"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
 
 #saved as umap_immune_plot3plot4 8x4
+
+#get the top10 from the Immune Cell
+immune_markers_lvld<- FindAllMarkers(immune_1, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
+nrow(immune_markers_lvld)
+#1058
+
+immune_markers_lvld %>% group_by(cluster) %>% top_n(10, avg_log2FC) -> top10_lev_im
+
+top10_lev_im
+nrow(top10_lev_im)
+#30
+#gives the top 10 genes for each cluster; 3 clusters
+
+#get top20
+immune_markers_lvld %>% group_by(cluster) %>% top_n(20, avg_log2FC) -> top20_lev_im
+
+top20_named <- c("CYTB", "HYDMA", "EF1D", "THIO.1", "MLRP1.11", "CO7A1.2", "ACTC.7", "EPHB1", "ERG", "CATL.3", "FBCD1.13", "MILK2.2", "LIPR1.4", "FBCD1.15", "C1QC", "DMBT1.3", "EFNB2.3", "TRPL.1", "TTC28.25", "TTC28.217", "DGKH", "XKR6.7", "Y1760.4", "MB21L", "TTC28.39", "FKB15", "TTC28.21", "DEAHC", "TTC28.141", "B3GT1.9")
+DoHeatmap(immune_1, features = top20_named,label=T, group.colors = c("#CC6699", "#33CC99", "#3333FF")) + theme(axis.text.y= element_text(size=5)) + scale_fill_gradientn(colors=color)
+#saved as top20_immune_named_052924 as landscape 9x6
+
+DoHeatmap(immune_1, features = immune_features_smaller,label=T, group.colors = c("#CC6699", "#33CC99", "#3333FF")) + theme(axis.text.y= element_text(size=5)) + scale_fill_gradientn(colors=color)
 ```
 
 ```{r}
