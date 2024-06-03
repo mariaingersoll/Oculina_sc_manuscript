@@ -901,7 +901,7 @@ immune_1 <- FindVariableFeatures(immune)
 immune_1 <- ScaleData(immune_1, features = rownames(immune_1@assays$RNA@features))
 immune_1 <- RunPCA(immune_1)
 immune_1 <- FindNeighbors(immune_1, dims = 1:30, reduction = "pca")
-immune_1 <- FindClusters(immune_1, resolution = 0.25)
+immune_1 <- FindClusters(immune_1, resolution = 0.5)
 #3 clusters
 immune_1 <- RunUMAP(immune_1, reduction="pca", dims=1:30, return.model=TRUE)
 
@@ -910,15 +910,14 @@ immune_1 <- RunUMAP(immune_1, reduction="pca", dims=1:30, return.model=TRUE)
 immune_1@meta.data$seurat_clusters <- as.numeric(as.character(immune_1@meta.data$seurat_clusters))+1
 Idents(immune_1)<- "seurat_clusters"
 immune_1$seurat_clusters
-immune_1@active.ident <- factor(x = immune_1@active.ident, levels = 1:2)
+immune_1@active.ident <- factor(x = immune_1@active.ident, levels = 1:3)
 immune_1@active.ident
 
-levels(immune_1) <- c("1","2")
+levels(immune_1) <- c("1","2", "3")
 
-plot3 <- DimPlot(immune_1, reduction = "umap", label = T, cols=c("#CC6699", "#33CC99"), alpha=0.5)
-#two clusters
+plot3 <- DimPlot(immune_1, reduction = "umap", label = T, cols=c("#CC6699", "#33CC99", "#3333FF"), alpha=0.5)
+#three clusters
 
-###fix from here
 plot4 <- DimPlot(immune_1, reduction = "umap", label=F, order=c("sym", "apo"), group.by = "symstate", cols=c("gray40", "#CC6600"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
 
 #saved as umap_immune_plot3plot4 8x4
