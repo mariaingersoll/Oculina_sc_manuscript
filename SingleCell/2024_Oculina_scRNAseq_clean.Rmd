@@ -901,7 +901,7 @@ immune_1 <- FindVariableFeatures(immune)
 immune_1 <- ScaleData(immune_1, features = rownames(immune_1@assays$RNA@features))
 immune_1 <- RunPCA(immune_1)
 immune_1 <- FindNeighbors(immune_1, dims = 1:30, reduction = "pca")
-immune_1 <- FindClusters(immune_1, resolution = 0.5)
+immune_1 <- FindClusters(immune_1, resolution = 0.25)
 #3 clusters
 immune_1 <- RunUMAP(immune_1, reduction="pca", dims=1:30, return.model=TRUE)
 
@@ -910,14 +910,15 @@ immune_1 <- RunUMAP(immune_1, reduction="pca", dims=1:30, return.model=TRUE)
 immune_1@meta.data$seurat_clusters <- as.numeric(as.character(immune_1@meta.data$seurat_clusters))+1
 Idents(immune_1)<- "seurat_clusters"
 immune_1$seurat_clusters
-immune_1@active.ident <- factor(x = immune_1@active.ident, levels = 1:3)
+immune_1@active.ident <- factor(x = immune_1@active.ident, levels = 1:2)
 immune_1@active.ident
 
-levels(immune_1) <- c("1","2","3")
+levels(immune_1) <- c("1","2")
 
-plot3 <- DimPlot(immune_1, reduction = "umap", label = T, cols=c("#CC6699", "#33CC99", "#3333FF"), alpha=0.5)
-#three clusters
+plot3 <- DimPlot(immune_1, reduction = "umap", label = T, cols=c("#CC6699", "#33CC99"), alpha=0.5)
+#two clusters
 
+###fix from here
 plot4 <- DimPlot(immune_1, reduction = "umap", label=F, order=c("sym", "apo"), group.by = "symstate", cols=c("gray40", "#CC6600"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
 
 #saved as umap_immune_plot3plot4 8x4
@@ -1374,7 +1375,7 @@ gderm3 <- FindClusters(gderm3, resolution = 0.25)
 #3 clusters
 gderm3 <- RunUMAP(gderm3, reduction="pca", dims=1:30, return.model=TRUE)
 
-gderm3 <- RunUMAP(gderm3, dims = 1:30, reduction = "integrated.cca")
+#gderm3 <- RunUMAP(gderm3, dims = 1:30, reduction = "integrated.cca")
 
 gderm3@meta.data$seurat_clusters <- as.numeric(as.character(gderm3@meta.data$seurat_clusters))+1
 Idents(gderm3)<- "seurat_clusters"
@@ -1382,12 +1383,14 @@ gderm3$seurat_clusters
 gderm3@active.ident <- factor(x = gderm3@active.ident, levels = 1:3)
 gderm3@active.ident
 
-plot9 <- DimPlot(gderm3, reduction = "umap", label = T, cols=alpha(c("#3333FF", "#FF9900", "#33CC99"), 0.75))
-#three clusters, not good separation
+levels(gderm3) <- c("1","2","3")
 
-plot10 <- DimPlot(gderm3, reduction = "umap", label=F, order=c("sym", "apo"), group.by = "symstate", cols=alpha(c("gray40", "#CC6600"), 0.5)) + ggtitle("") + theme(legend.text=element_text(size=10))
+plot9 <- DimPlot(gderm3, reduction = "umap", label = T, cols=c("#CC6699", "#33CC99", "#3333FF"), alpha=0.5)
+#three clusters
 
-plot9b <- DimPlot(gderm3, reduction = "umap", label=T, order=c("sym", "apo"), split.by = "symstate", cols=alpha(c("#3333FF", "#FF9900", "#33CC99"), 0.5)) + ggtitle("") + theme(legend.text=element_text(size=10))
+plot10 <- DimPlot(gderm3, reduction = "umap", label=F, order=c("sym", "apo"), group.by = "symstate", cols=c("gray40", "#CC6600"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
+
+plot9b <- DimPlot(gderm3, reduction = "umap", label=T, split.by = "symstate", cols=c("#CC6699", "#33CC99", "#3333FF"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
 
 #saved as umap_gderm3_plot9plot10 8x4
 #umap_gderm3_plot9b 8x4 landscape
@@ -1422,7 +1425,7 @@ map(paste0("PC_", 1:10), function(pc){
                 ggtitle(pc)
 }) %>% 
         plot_grid(plotlist = .)
-#saved as gderm3_pcplots_umap_020124
+#saved as gderm3_pcplots_umap_060224
 
 DimPlot(gderm3, reduction = "pca", label=F, order=c("sym", "apo"), group.by = "symstate", cols=alpha(c("gray40", "#CC6600"), 0.5))
 
@@ -1434,7 +1437,7 @@ summary(aov(PC_1 ~ sym_state, data = pca_gd3)) #3.39e-10 ***
 summary(aov(PC_2 ~ sym_state, data = pca_gd3)) #<2e-16 ***
 summary(aov(PC_3 ~ sym_state, data = pca_gd3)) #3.35e-08 ***
 summary(aov(PC_4 ~ sym_state, data = pca_gd3)) #0.511
-summary(aov(PC_5 ~ sym_state, data = pca_gd3)) #0.0177 *                             
+summary(aov(PC_5 ~ sym_state, data = pca_gd3)) #0.0177 *                              
 summary(aov(PC_6 ~ sym_state, data = pca_gd3)) #0.0363 *
 summary(aov(PC_7 ~ sym_state, data = pca_gd3)) #0.00118 **
 summary(aov(PC_8 ~ sym_state, data = pca_gd3)) #3.59e-07 ***
@@ -1459,6 +1462,7 @@ gderm3_markers_subclust <- FindAllMarkers(gderm3,
                           latent.vars = c('percent.mt', 'nFeature_RNA'))
 
 gderm3_markers_subclust
+
 
 #get proportion of each subcluster for each sym state
 percent_cluster_gderm3 <- prop.table(table(Idents(gderm3), gderm3@meta.data$symstate), margin = 2)
@@ -1486,7 +1490,8 @@ head(gderm3_1_mark)
 #get apo vs sym differences for subcluster 2 of gderm3
 gderm3_2 <- subset(gderm3, idents="2")
 DefaultAssay(gderm3_2) <- "RNA"
-#can't get markers for subclust 2 bc not enough apo cells
+
+gderm3_2_mark <- FindMarkers(gderm3_2, ident.1 = "sym", ident.2="apo", group.by = "symstate", test.use="DESeq2", slot = "counts") #no apos
 
 #get apo vs sym differences for subcluster 3 of gderm3
 gderm3_3 <- subset(gderm3, idents="3")
@@ -1495,27 +1500,10 @@ DefaultAssay(gderm3_3) <- "RNA"
 gderm3_3_mark <- FindMarkers(gderm3_3, ident.1 = "sym", ident.2="apo", group.by = "symstate", test.use="DESeq2", slot = "counts")
 gderm3_3_mark <- rownames_to_column(gderm3_3_mark, var="gene_symbol")
 head(gderm3_3_mark)
+
+#has similar pattern to gderm1 just not as strong
 ```
 
-Get top10 pos and neg features driving pcs1-5 with annotated gene names for gderm3
-```{r}
-print(gderm3[["pca"]], dims = 1:5, nfeatures = 10)
-
-gderm3_feats_1to5 <- c("RL15", "RL371", "RL23", "RLA1", "RL4B", "RS12", "RS18", "RL13", "RL18A", "RS14", "ANKS3", "ARLY", "GLCM.1", "ACOD.2", "NCLX.1", "TRPC5.15", "ANKS3", "ARLY", "TRPC5.15", "HNF4A", "GLCM.1", "ACBG2", "PLCL.5", "CATL.9", "MMP25", "THSD1", "MYLK.1", "USOM7.10", "TNIP1", "TRAF3.9", "TRAD1.1", "MMP25", "DNAJ1", "BAGS.1", "SVEP1.65", "EPHB1.1", "ELK1.5", "PZRN3", "C356", "LRMP", "YRD6.75", "PEG3.2", "NCLX", "NOTC2.9", "SERB", "GLSN", "MFS12.13", "CO1A2.14", "RRP15", "GAS8", "LRC27", "FXJ1B", "CFA57", "LCA5", "ANK2.5", "F161B", "EFHC2", "LRC27", "FXJ1B", "DJB13", "GAS8", "F161B", "EFHC2", "CFA45", "SPT17", "VWA3A.2", "PEG3.2", "SSH2", "SVEP1.65", "PLCL.5", "PGCA.20", "CNKR2", "ELK1.5")
-
-gderm3_1to5_mark <- subset(gderm3_mark, gene_symbol %in% gderm3_feats_1to5)
-# add a column of NAs
-gderm3_1to5_mark$diffexpressed <- "ns"
-# if log2Foldchange > 0 set as "SYM"
-gderm3_1to5_mark$diffexpressed[gderm3_1to5_mark$avg_log2FC > 0] <- "SYM"
-# if log2Foldchange < 0 set as "APO"
-gderm3_1to5_mark$diffexpressed[gderm3_1to5_mark$avg_log2FC < 0] <- "APO"
-gderm3_1to5_bar <- ggplot(data=gderm3_1to5_mark, aes(y=gene_symbol, x=avg_log2FC, fill=diffexpressed)) +
-  geom_bar(position="stack", stat="identity", color="black", alpha=0.6)+
-  scale_fill_manual(values=c("gray40", "#CC6600"))+
-  theme_classic()
-#saved as gderm3_1to5_bar as portrait 9x4
-```
 
 Gastrodermis 4
 ```{r}
@@ -1526,26 +1514,28 @@ gderm4 <- ScaleData(gderm4, features = rownames(gderm4@assays$RNA@features))
 gderm4 <- RunPCA(gderm4)
 gderm4 <- FindNeighbors(gderm4, dims = 1:30, reduction = "pca")
 gderm4 <- FindClusters(gderm4, resolution = 0.25)
-#1 cluster
-gderm4 <- RunUMAP(gderm4, reduction="pca", dims=1:30, return.model=TRUE)
+#1 clusters
+gderm3 <- RunUMAP(gderm3, reduction="pca", dims=1:30, return.model=TRUE)
 
-gderm4 <- RunUMAP(gderm4, dims = 1:30, reduction = "integrated.cca")
+#gderm3 <- RunUMAP(gderm3, dims = 1:30, reduction = "integrated.cca")
 
-gderm4@meta.data$seurat_clusters <- as.numeric(as.character(gderm4@meta.data$seurat_clusters))+1
-Idents(gderm4)<- "seurat_clusters"
-gderm4$seurat_clusters
-gderm4@active.ident <- factor(x = gderm4@active.ident, levels = 1)
-gderm4@active.ident
+gderm3@meta.data$seurat_clusters <- as.numeric(as.character(gderm3@meta.data$seurat_clusters))+1
+Idents(gderm3)<- "seurat_clusters"
+gderm3$seurat_clusters
+gderm3@active.ident <- factor(x = gderm3@active.ident, levels = 1:3)
+gderm3@active.ident
 
-plot11 <- DimPlot(gderm4, reduction = "umap", label = T, cols=alpha(c("#3333FF"), 0.75))
-#one cluster
+levels(gderm3) <- c("1","2","3")
 
-plot12 <- DimPlot(gderm4, reduction = "umap", label=F, order=c("sym", "apo"), group.by = "symstate", cols=alpha(c("gray40", "#CC6600"), 0.5)) + ggtitle("") + theme(legend.text=element_text(size=10))
+plot9 <- DimPlot(gderm3, reduction = "umap", label = T, cols=c("#CC6699", "#33CC99", "#3333FF"), alpha=0.5)
+#three clusters
 
-plot11b <- DimPlot(gderm4, reduction = "umap", label=T, order=c("sym", "apo"), split.by = "symstate", cols=alpha(c("#3333FF"), 0.5)) + ggtitle("") + theme(legend.text=element_text(size=10))
+plot10 <- DimPlot(gderm3, reduction = "umap", label=F, order=c("sym", "apo"), group.by = "symstate", cols=c("gray40", "#CC6600"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
 
-#saved as umap_gderm4_plot11plot12 8x4
-#umap_gderm4_plot11b 8x4 landscape
+plot9b <- DimPlot(gderm3, reduction = "umap", label=T, split.by = "symstate", cols=c("#CC6699", "#33CC99", "#3333FF"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
+
+#saved as umap_gderm3_plot9plot10 8x4
+#umap_gderm3_plot9b 8x4 landscape
 ```
 
 ```{r}
