@@ -1374,8 +1374,6 @@ gderm3 <- FindClusters(gderm3, resolution = 0.25)
 #3 clusters
 gderm3 <- RunUMAP(gderm3, reduction="pca", dims=1:30, return.model=TRUE)
 
-#gderm3 <- RunUMAP(gderm3, dims = 1:30, reduction = "integrated.cca")
-
 gderm3@meta.data$seurat_clusters <- as.numeric(as.character(gderm3@meta.data$seurat_clusters))+1
 Idents(gderm3)<- "seurat_clusters"
 gderm3$seurat_clusters
@@ -1398,7 +1396,6 @@ plot9b <- DimPlot(gderm3, reduction = "umap", label=T, split.by = "symstate", co
 ```{r}
 gderm3_topfeat <- TopFeatures(object = gderm3[["pca"]], dim = 1, nfeatures = 20, balanced = TRUE)
 gderm3[["umap"]]@cell.embeddings
-##https://hbctraining.github.io/scRNA-seq_online/lessons/08_SC_clustering_quality_control.html
 columns <- c(paste0("PC_", 1:10),
             "ident",
             "umap_1", "umap_2")
@@ -1436,7 +1433,7 @@ summary(aov(PC_1 ~ sym_state, data = pca_gd3)) #3.39e-10 ***
 summary(aov(PC_2 ~ sym_state, data = pca_gd3)) #<2e-16 ***
 summary(aov(PC_3 ~ sym_state, data = pca_gd3)) #3.35e-08 ***
 summary(aov(PC_4 ~ sym_state, data = pca_gd3)) #0.511
-summary(aov(PC_5 ~ sym_state, data = pca_gd3)) #0.0177 *                              
+summary(aov(PC_5 ~ sym_state, data = pca_gd3)) #0.0177 *                             
 summary(aov(PC_6 ~ sym_state, data = pca_gd3)) #0.0363 *
 summary(aov(PC_7 ~ sym_state, data = pca_gd3)) #0.00118 **
 summary(aov(PC_8 ~ sym_state, data = pca_gd3)) #3.59e-07 ***
@@ -1461,7 +1458,6 @@ gderm3_markers_subclust <- FindAllMarkers(gderm3,
                           latent.vars = c('percent.mt', 'nFeature_RNA'))
 
 gderm3_markers_subclust
-
 
 #get proportion of each subcluster for each sym state
 percent_cluster_gderm3 <- prop.table(table(Idents(gderm3), gderm3@meta.data$symstate), margin = 2)
@@ -1490,7 +1486,7 @@ head(gderm3_1_mark)
 gderm3_2 <- subset(gderm3, idents="2")
 DefaultAssay(gderm3_2) <- "RNA"
 
-gderm3_2_mark <- FindMarkers(gderm3_2, ident.1 = "sym", ident.2="apo", group.by = "symstate", test.use="DESeq2", slot = "counts") #no apos
+gderm3_2_mark <- FindMarkers(gderm3_2, ident.1 = "sym", ident.2="apo", group.by = "symstate", test.use="DESeq2", slot = "counts") ##no apos
 
 #get apo vs sym differences for subcluster 3 of gderm3
 gderm3_3 <- subset(gderm3, idents="3")
@@ -1500,7 +1496,7 @@ gderm3_3_mark <- FindMarkers(gderm3_3, ident.1 = "sym", ident.2="apo", group.by 
 gderm3_3_mark <- rownames_to_column(gderm3_3_mark, var="gene_symbol")
 head(gderm3_3_mark)
 
-#has similar pattern to gderm1 just not as strong
+####has similar pattern to gderm1 just not as strong (determined just by looking at the marker genes for the whole gderm3 and by looking at the genes driving the PCs, so I'm not going to make any other plots for this at the moment)
 ```
 
 
@@ -1513,34 +1509,31 @@ gderm4 <- ScaleData(gderm4, features = rownames(gderm4@assays$RNA@features))
 gderm4 <- RunPCA(gderm4)
 gderm4 <- FindNeighbors(gderm4, dims = 1:30, reduction = "pca")
 gderm4 <- FindClusters(gderm4, resolution = 0.25)
-#1 clusters
-gderm3 <- RunUMAP(gderm3, reduction="pca", dims=1:30, return.model=TRUE)
+#1 cluster
+gderm4 <- RunUMAP(gderm4, reduction="pca", dims=1:30, return.model=TRUE)
 
-#gderm3 <- RunUMAP(gderm3, dims = 1:30, reduction = "integrated.cca")
+gderm4@meta.data$seurat_clusters <- as.numeric(as.character(gderm4@meta.data$seurat_clusters))+1
+Idents(gderm4)<- "seurat_clusters"
+gderm4$seurat_clusters
+gderm4@active.ident <- factor(x = gderm4@active.ident, levels = 1)
+gderm4@active.ident
 
-gderm3@meta.data$seurat_clusters <- as.numeric(as.character(gderm3@meta.data$seurat_clusters))+1
-Idents(gderm3)<- "seurat_clusters"
-gderm3$seurat_clusters
-gderm3@active.ident <- factor(x = gderm3@active.ident, levels = 1:3)
-gderm3@active.ident
+levels(gderm4) <- c("1")
 
-levels(gderm3) <- c("1","2","3")
+plot11 <- DimPlot(gderm4, reduction = "umap", label = T, cols=c("#CC6699"), alpha=0.5)
+#one cluster
 
-plot9 <- DimPlot(gderm3, reduction = "umap", label = T, cols=c("#CC6699", "#33CC99", "#3333FF"), alpha=0.5)
-#three clusters
+plot12 <- DimPlot(gderm4, reduction = "umap", label=F, order=c("sym", "apo"), group.by = "symstate", cols=c("gray40", "#CC6600"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
 
-plot10 <- DimPlot(gderm3, reduction = "umap", label=F, order=c("sym", "apo"), group.by = "symstate", cols=c("gray40", "#CC6600"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
+plot11b <- DimPlot(gderm4, reduction = "umap", label=T, split.by = "symstate", cols=c("#CC6699"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
 
-plot9b <- DimPlot(gderm3, reduction = "umap", label=T, split.by = "symstate", cols=c("#CC6699", "#33CC99", "#3333FF"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
-
-#saved as umap_gderm3_plot9plot10 8x4
-#umap_gderm3_plot9b 8x4 landscape
+#saved as umap_gderm4_plot11plot12 8x4
+#umap_gderm4_plot11b 8x4 landscape
 ```
 
 ```{r}
 gderm4_topfeat <- TopFeatures(object = gderm4[["pca"]], dim = 1, nfeatures = 20, balanced = TRUE)
 gderm4[["umap"]]@cell.embeddings
-##https://hbctraining.github.io/scRNA-seq_online/lessons/08_SC_clustering_quality_control.html
 columns <- c(paste0("PC_", 1:10),
             "ident",
             "umap_1", "umap_2")
@@ -1566,7 +1559,7 @@ map(paste0("PC_", 1:10), function(pc){
                 ggtitle(pc)
 }) %>% 
         plot_grid(plotlist = .)
-#saved as gderm4_pcplots_umap_020124
+#saved as gderm4_pcplots_umap_062524
 
 DimPlot(gderm4, reduction = "pca", label=F, order=c("sym", "apo"), group.by = "symstate", cols=alpha(c("gray40", "#CC6600"), 0.5))
 
@@ -1578,7 +1571,8 @@ summary(aov(PC_1 ~ sym_state, data = pca_gd4)) #0.0106 *
 summary(aov(PC_2 ~ sym_state, data = pca_gd4)) #9.2e-05 ***
 summary(aov(PC_3 ~ sym_state, data = pca_gd4)) #0.0223 *
 summary(aov(PC_4 ~ sym_state, data = pca_gd4)) #0.424
-summary(aov(PC_5 ~ sym_state, data = pca_gd4)) #0.31                             
+summary(aov(PC_5 ~ sym_state, data = pca_gd4)) #0.31
+
 summary(aov(PC_6 ~ sym_state, data = pca_gd4)) #0.00151 **
 summary(aov(PC_7 ~ sym_state, data = pca_gd4)) #0.928
 summary(aov(PC_8 ~ sym_state, data = pca_gd4)) #0.159
@@ -1594,52 +1588,19 @@ gderm4_mark <- FindMarkers(gderm4, ident.1 = "sym", ident.2="apo", group.by = "s
 gderm4_mark <- rownames_to_column(gderm4_mark, var="gene_symbol")
 head(gderm4_mark)
 
-#look at subcluster marker genes, only one subcluster
+#only one sublcuster
 
-#get proportion of each subcluster for each sym state
-percent_cluster_gderm4 <- prop.table(table(Idents(gderm4), gderm4@meta.data$symstate), margin = 2)
+#dont need to do proportion of each subclust by symstate bc only one subclust
 
-prop_cluster_gderm4 <- as.data.frame(percent_cluster_gderm4) %>%
-  mutate(Cluster = Var1,
-         SymState = Var2) %>%
-  ggplot(., aes(Cluster, Freq, fill = SymState)) +
-  geom_bar(stat = 'identity', position = 'dodge', color="black", width=0.6) +
-  scale_fill_manual(values=alpha(c("gray40", "#CC6600"), 0.75))+
-  ylab("Proportion of Cells per Library")+
-  coord_flip()+
-  theme(panel.background = element_rect(color="black", fill="white"),
-        panel.grid.major = element_line(colour = "gray80", linewidth = 0.5, linetype="dotted"))
-#prop_cluster_gderm4 as landscape 4x3, lol obviously theyre both 100%
-
-#get apo vs sym differences for subcluster 1 of gderm4
+#get apo vs sym differences for subcluster 1 of gderm3
 gderm4_1 <- subset(gderm4, idents="1")
 DefaultAssay(gderm4_1) <- "RNA"
 
 gderm4_1_mark <- FindMarkers(gderm4_1, ident.1 = "sym", ident.2="apo", group.by = "symstate", test.use="DESeq2", slot = "counts")
 gderm4_1_mark <- rownames_to_column(gderm4_1_mark, var="gene_symbol")
 head(gderm4_1_mark)
-
 ```
 
-Get top10 pos and neg features driving pcs1-5 with annotated gene names for gderm4
-```{r}
-print(gderm4[["pca"]], dims = 1:5, nfeatures = 10)
-
-gderm4_feats_1to5 <- c("CRA1B.3", "COA", "MYP", "HEBP2.2", "CO1A2.9", "CO1A2.11", "USOM2.4", "NRP2.13", "OIT3.33", "ACTC.2", "SYT14", "SAAR2.3", "ZPP.5", "MYOF.4", "STAR7", "ACOX1.1", "CSMD2.6", "TRPA1.7", "CDCA3", "H5.1", "CCNB3", "MICAL", "DYL1", "ANLN", "ARMC1", "TOB1", "NUSAP", "MTFR2", "TRAF3.9", "ETS1B", "SIK2", "PAX7", "TNIP1", "TRAF3.10", "TRAD1.1", "MMP25", "Y1760.1", "H5.1", "ARMC1", "AURAA", "CDCA3", "CCNB3", "UBE2S", "PLK1.1", "MEIG1", "MTFR2", "DPOD4", "KI20A", "MICAL", "CTRO.1", "DLGP5", "CTRO", "FOXN4", "ATS6.14", "ANR26", "MELK", "Y4HQ", "H2B.11", "KLHL3.2", "ARL4A", "CIC.1", "ZN583.2", "KLHL3.2", "Y4HQ", "CIC.1", "ZN583.2", "IQCE.1", "H2B.11", "LTBP1", "RL33A", "EPDR1.1", "RS24", "RS27A", "RL32", "RL22", "CATL.8")
-
-gderm4_1to5_mark <- subset(gderm4_mark, gene_symbol %in% gderm4_feats_1to5)
-# add a column of NAs
-gderm4_1to5_mark$diffexpressed <- "ns"
-# if log2Foldchange > 0 set as "SYM"
-gderm4_1to5_mark$diffexpressed[gderm4_1to5_mark$avg_log2FC > 0] <- "SYM"
-# if log2Foldchange < 0 set as "APO"
-gderm4_1to5_mark$diffexpressed[gderm4_1to5_mark$avg_log2FC < 0] <- "APO"
-gderm4_1to5_bar <- ggplot(data=gderm4_1to5_mark, aes(y=gene_symbol, x=avg_log2FC, fill=diffexpressed)) +
-  geom_bar(position="stack", stat="identity", color="black", alpha=0.6)+
-  scale_fill_manual(values=c("gray40", "#CC6600"))+
-  theme_classic()
-#saved as gderm4_1to5_bar as portrait 9x4
-```
 
 Gastrodermis 5
 ```{r}
@@ -1650,10 +1611,8 @@ gderm5 <- ScaleData(gderm5, features = rownames(gderm5@assays$RNA@features))
 gderm5 <- RunPCA(gderm5)
 gderm5 <- FindNeighbors(gderm5, dims = 1:30, reduction = "pca")
 gderm5 <- FindClusters(gderm5, resolution = 0.25)
-#2 cluster
+#2 clusters
 gderm5 <- RunUMAP(gderm5, reduction="pca", dims=1:30, return.model=TRUE)
-
-gderm5 <- RunUMAP(gderm5, dims = 1:30, reduction = "integrated.cca")
 
 gderm5@meta.data$seurat_clusters <- as.numeric(as.character(gderm5@meta.data$seurat_clusters))+1
 Idents(gderm5)<- "seurat_clusters"
@@ -1661,12 +1620,14 @@ gderm5$seurat_clusters
 gderm5@active.ident <- factor(x = gderm5@active.ident, levels = 1:2)
 gderm5@active.ident
 
-plot13 <- DimPlot(gderm5, reduction = "umap", label = T, cols=alpha(c("#3333FF", "#FF9900"), 0.75))
-#two cluster
+levels(gderm5) <- c("1","2")
 
-plot14 <- DimPlot(gderm5, reduction = "umap", label=F, order=c("sym", "apo"), group.by = "symstate", cols=alpha(c("gray40", "#CC6600"), 0.5)) + ggtitle("") + theme(legend.text=element_text(size=10))
+plot13 <- DimPlot(gderm5, reduction = "umap", label = T, cols=c("#CC6699", "#33CC99"), alpha=0.5)
+#two clusters
 
-plot13b <- DimPlot(gderm5, reduction = "umap", label=T, order=c("sym", "apo"), split.by = "symstate", cols=alpha(c("#3333FF", "#FF9900"), 0.5)) + ggtitle("") + theme(legend.text=element_text(size=10))
+plot14 <- DimPlot(gderm5, reduction = "umap", label=F, order=c("sym", "apo"), group.by = "symstate", cols=c("gray40", "#CC6600"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
+
+plot13b <- DimPlot(gderm5, reduction = "umap", label=T, split.by = "symstate", cols=c("#CC6699", "#33CC99"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
 
 #saved as umap_gderm5_plot13plot14 8x4
 #umap_gderm5_plot13b 8x4 landscape
@@ -1675,7 +1636,6 @@ plot13b <- DimPlot(gderm5, reduction = "umap", label=T, order=c("sym", "apo"), s
 ```{r}
 gderm5_topfeat <- TopFeatures(object = gderm5[["pca"]], dim = 1, nfeatures = 20, balanced = TRUE)
 gderm5[["umap"]]@cell.embeddings
-##https://hbctraining.github.io/scRNA-seq_online/lessons/08_SC_clustering_quality_control.html
 columns <- c(paste0("PC_", 1:10),
             "ident",
             "umap_1", "umap_2")
@@ -1701,7 +1661,7 @@ map(paste0("PC_", 1:10), function(pc){
                 ggtitle(pc)
 }) %>% 
         plot_grid(plotlist = .)
-#saved as gderm5_pcplots_umap_020124
+#saved as gderm5_pcplots_umap_062524
 
 DimPlot(gderm5, reduction = "pca", label=F, order=c("sym", "apo"), group.by = "symstate", cols=alpha(c("gray40", "#CC6600"), 0.5))
 
@@ -1713,7 +1673,7 @@ summary(aov(PC_1 ~ sym_state, data = pca_gd5)) #0.118
 summary(aov(PC_2 ~ sym_state, data = pca_gd5)) #0.000597 ***
 summary(aov(PC_3 ~ sym_state, data = pca_gd5)) #0.352
 summary(aov(PC_4 ~ sym_state, data = pca_gd5)) #6.46e-11 ***
-summary(aov(PC_5 ~ sym_state, data = pca_gd5)) #0.296 *                           
+summary(aov(PC_5 ~ sym_state, data = pca_gd5)) #0.296                             
 summary(aov(PC_6 ~ sym_state, data = pca_gd5)) #0.0158 *
 summary(aov(PC_7 ~ sym_state, data = pca_gd5)) #1.36e-05 ***
 summary(aov(PC_8 ~ sym_state, data = pca_gd5)) #0.962
@@ -1766,30 +1726,11 @@ head(gderm5_1_mark)
 gderm5_2 <- subset(gderm5, idents="2")
 DefaultAssay(gderm5_2) <- "RNA"
 
-gderm5_2_mark <- FindMarkers(gderm5_2, ident.1 = "sym", ident.2="apo", group.by = "symstate", test.use="DESeq2", slot = "counts")
+gderm5_2_mark <- FindMarkers(gderm5_2, ident.1 = "sym", ident.2="apo", group.by = "symstate", test.use="DESeq2", slot = "counts") 
 gderm5_2_mark <- rownames_to_column(gderm5_2_mark, var="gene_symbol")
 head(gderm5_2_mark)
 ```
 
-Get top10 pos and neg features driving pcs1-5 with annotated gene names for gderm5
-```{r}
-print(gderm5[["pca"]], dims = 1:5, nfeatures = 10)
-
-gderm5_feats_1to5 <- c("STA13", "VIT", "BMTI6", "CADN.14", "PKHL1.1", "RTJK.21", "NLRC4.2", "RS14", "RL38", "RS4", "RL6", "RS19", "RL31", "TYB.1", "RS18", "RS6", "RL371", "ATAD5", "TIM", "MCM10", "DNLI1", "WDHD1", "CDC7.1", "CA1AA", "DNMT1", "DPOE4", "MSH6", "RS4", "RL44Q", "RL37A", "RL31", "RL23", "RL32", "RL10", "RL24", "RLA0", "RL8", "SYTL4.1", "ACOD.2", "GLNA", "CATL.9", "DXO.1", "TRAF3.16", "MYCT", "CP17A.11", "NX22A", "AGRL2", "SFRP2", "A1M", "PRD", "ROBO1.2", "FHL2", "MFSD6.13", "ATS16", "TRPC2.5", "SYTL4.1", "AP5S1", "NX22A", "CFA52", "DHE4", "CPT1A", "MCPH1", "RFA2", "IF6", "RECQ4", "TTL12", "RPA2", "ATAD5", "MLRP1.4", "WNT1.1", "SPDEF", "PKHL1.1", "ATS16", "VIT", "ROBO1.2", "VWDE.4", "ERF3B", "DNLI1", "CL056", "MCMD2", "ORCT.17", "LIN41.71", "PRDM9.5", "CJ088", "ZN665", "GCY.1")
-
-gderm5_1to5_mark <- subset(gderm5_mark, gene_symbol %in% gderm5_feats_1to5)
-# add a column of NAs
-gderm5_1to5_mark$diffexpressed <- "ns"
-# if log2Foldchange > 0 set as "SYM"
-gderm5_1to5_mark$diffexpressed[gderm5_1to5_mark$avg_log2FC > 0] <- "SYM"
-# if log2Foldchange < 0 set as "APO"
-gderm5_1to5_mark$diffexpressed[gderm5_1to5_mark$avg_log2FC < 0] <- "APO"
-gderm5_1to5_bar <- ggplot(data=gderm5_1to5_mark, aes(y=gene_symbol, x=avg_log2FC, fill=diffexpressed)) +
-  geom_bar(position="stack", stat="identity", color="black", alpha=0.6)+
-  scale_fill_manual(values=c("gray40", "#CC6600"))+
-  theme_classic()
-#saved as gderm5_1to5_bar as portrait 9x4
-```
 
 Gastrodermis 6
 ```{r}
@@ -1803,20 +1744,21 @@ gderm6 <- FindClusters(gderm6, resolution = 0.25)
 #1 cluster
 gderm6 <- RunUMAP(gderm6, reduction="pca", dims=1:30, return.model=TRUE)
 
-gderm6 <- RunUMAP(gderm6, dims = 1:30, reduction = "integrated.cca")
-
 gderm6@meta.data$seurat_clusters <- as.numeric(as.character(gderm6@meta.data$seurat_clusters))+1
 Idents(gderm6)<- "seurat_clusters"
 gderm6$seurat_clusters
 gderm6@active.ident <- factor(x = gderm6@active.ident, levels = 1)
 gderm6@active.ident
 
-plot15 <- DimPlot(gderm6, reduction = "umap", label = T, cols=alpha(c("#3333FF"), 0.75))
+levels(gderm6) <- c("1")
+
+plot15 <- DimPlot(gderm6, reduction = "umap", label = T, cols=c("#CC6699"), alpha=0.5)
 #one cluster
 
-plot16 <- DimPlot(gderm6, reduction = "umap", label=F, order=c("sym", "apo"), group.by = "symstate", cols=alpha(c("gray40", "#CC6600"), 0.5)) + ggtitle("") + theme(legend.text=element_text(size=10))
+plot16 <- DimPlot(gderm6, reduction = "umap", label=F, order=c("sym", "apo"), group.by = "symstate", cols=c("gray40", "#CC6600"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
 
-plot15b <- DimPlot(gderm6, reduction = "umap", label=T, order=c("sym", "apo"), split.by = "symstate", cols=alpha(c("#3333FF"), 0.5)) + ggtitle("") + theme(legend.text=element_text(size=10))
+plot15b <- DimPlot(gderm6, reduction = "umap", label=T, split.by = "symstate", cols=c("#CC6699"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
+
 
 #saved as umap_gderm6_plot15plot16 8x4
 #umap_gderm6_plot15b 8x4 landscape
@@ -1825,7 +1767,6 @@ plot15b <- DimPlot(gderm6, reduction = "umap", label=T, order=c("sym", "apo"), s
 ```{r}
 gderm6_topfeat <- TopFeatures(object = gderm6[["pca"]], dim = 1, nfeatures = 20, balanced = TRUE)
 gderm6[["umap"]]@cell.embeddings
-##https://hbctraining.github.io/scRNA-seq_online/lessons/08_SC_clustering_quality_control.html
 columns <- c(paste0("PC_", 1:10),
             "ident",
             "umap_1", "umap_2")
@@ -1851,7 +1792,7 @@ map(paste0("PC_", 1:10), function(pc){
                 ggtitle(pc)
 }) %>% 
         plot_grid(plotlist = .)
-#saved as gderm6_pcplots_umap_020124
+#saved as gderm6_pcplots_umap_062524
 
 DimPlot(gderm6, reduction = "pca", label=F, order=c("sym", "apo"), group.by = "symstate", cols=alpha(c("gray40", "#CC6600"), 0.5))
 
@@ -1863,7 +1804,8 @@ summary(aov(PC_1 ~ sym_state, data = pca_gd6)) #0.0768 .
 summary(aov(PC_2 ~ sym_state, data = pca_gd6)) #0.92
 summary(aov(PC_3 ~ sym_state, data = pca_gd6)) #0.199
 summary(aov(PC_4 ~ sym_state, data = pca_gd6)) #0.84
-summary(aov(PC_5 ~ sym_state, data = pca_gd6)) #0.99                           
+summary(aov(PC_5 ~ sym_state, data = pca_gd6)) #0.99
+
 summary(aov(PC_6 ~ sym_state, data = pca_gd6)) #0.913
 summary(aov(PC_7 ~ sym_state, data = pca_gd6)) #0.906
 summary(aov(PC_8 ~ sym_state, data = pca_gd6)) #0.89
@@ -1879,32 +1821,11 @@ gderm6_mark <- FindMarkers(gderm6, ident.1 = "sym", ident.2="apo", group.by = "s
 gderm6_mark <- rownames_to_column(gderm6_mark, var="gene_symbol")
 head(gderm6_mark)
 
-#look at subcluster marker genes
-gderm6_markers_subclust <- FindAllMarkers(gderm6, 
-                          min.pct = -Inf, 
-                          logfc.threshold = .5, 
-                          only.pos = T, 
-                          test.use = "MAST",
-                          latent.vars = c('percent.mt', 'nFeature_RNA'))
+#only one sublcuster
 
-#no DE genes identifiedWarning
+#dont need to do proportion of each subclust by symstate bc only one subclust
 
-#get proportion of each subcluster for each sym state
-percent_cluster_gderm6 <- prop.table(table(Idents(gderm6), gderm6@meta.data$symstate), margin = 2)
-
-prop_cluster_gderm6 <- as.data.frame(percent_cluster_gderm6) %>%
-  mutate(Cluster = Var1,
-         SymState = Var2) %>%
-  ggplot(., aes(Cluster, Freq, fill = SymState)) +
-  geom_bar(stat = 'identity', position = 'dodge', color="black", width=0.6) +
-  scale_fill_manual(values=alpha(c("gray40", "#CC6600"), 0.75))+
-  ylab("Proportion of Cells per Library")+
-  coord_flip()+
-  theme(panel.background = element_rect(color="black", fill="white"),
-        panel.grid.major = element_line(colour = "gray80", linewidth = 0.5, linetype="dotted"))
-#prop_cluster_gderm6 as landscape 4x3
-
-#get apo vs sym differences for subcluster 1 of gderm6
+#get apo vs sym differences for subcluster 1 of gderm3
 gderm6_1 <- subset(gderm6, idents="1")
 DefaultAssay(gderm6_1) <- "RNA"
 
@@ -1913,25 +1834,7 @@ gderm6_1_mark <- rownames_to_column(gderm6_1_mark, var="gene_symbol")
 head(gderm6_1_mark)
 ```
 
-Get top10 pos and neg features driving pcs1-5 with annotated gene names for gderm6
-```{r}
-print(gderm6[["pca"]], dims = 1:5, nfeatures = 10)
 
-gderm6_feats_1to5 <- c("RL371", "RL5A", "RL8", "RL28", "RL11", "CATL.7", "RIR1", "RS9", "CAPSL", "IF5", "RHG10.1", "ZN480.4", "DNA2", "NAC1", "SYMC", "SMC1A.1", "TPPP2", "ATD2B", "RNP1A", "ANXA6.2", "NKAP1", "CFA36", "MIS12", "MO4L1", "NAC1", "MED16", "MIRO1", "LRP4.6", "RAB30", "SC6A1.11", "TRAF3.10", "FHL2", "FSTA", "TTC28.102", "CCD77", "SMC1A.1", "MED16", "NAC1", "DCNL4", "NBN", "MTSS1", "KBL", "C74A2", "EPHA5", "MSI2H.1", "ESS2", "CFA44.1", "NUDT9", "CML6", "SVIL", "DYHC", "ARI1A", "BRCA2", "USP9X.2", "MTNN.3", "NAA40", "S61A2", "GPHR", "PFKAM", "TMM53.1", "MITF", "MO4L1", "MIS12", "CI016", "TMM26.2", "WBP4", "CHM2B", "ATD2B", "PACRL", "RHG10.1", "GRPE1", "HSP97", "STX18.1", "SAS6", "FEN1", "GCP4", "PR2.1", "MND1", "LYAR", "RRP15", "SNX8", "ATP5J", "TTLL1")
-
-gderm6_1to5_mark <- subset(gderm6_mark, gene_symbol %in% gderm6_feats_1to5)
-# add a column of NAs
-gderm6_1to5_mark$diffexpressed <- "ns"
-# if log2Foldchange > 0 set as "SYM"
-gderm6_1to5_mark$diffexpressed[gderm6_1to5_mark$avg_log2FC > 0] <- "SYM"
-# if log2Foldchange < 0 set as "APO"
-gderm6_1to5_mark$diffexpressed[gderm6_1to5_mark$avg_log2FC < 0] <- "APO"
-gderm6_1to5_bar <- ggplot(data=gderm6_1to5_mark, aes(y=gene_symbol, x=avg_log2FC, fill=diffexpressed)) +
-  geom_bar(position="stack", stat="identity", color="black", alpha=0.6)+
-  scale_fill_manual(values=c("gray40", "#CC6600"))+
-  theme_classic()
-#saved as gderm6_1to5_bar as portrait 9x4
-```
 
 Zoom back out to the big picture and get lfc between apo and sym across the whole seurat object
 ```{r}
@@ -2097,7 +2000,7 @@ h90a_vln2_gderm1 <- VlnPlot(object =gderm1, features = c("H90A1"), pt.size= 0,co
 
 
 
-trying to make the iso-collased gtf
+Making the iso-collapsed gtf
 ```{r}
 gtf <- read.table("./new_Ap_ref/apoculata_filt.gtf", sep="\t")
 head(gtf)
