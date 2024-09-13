@@ -4,3 +4,481 @@ author: "Maria Valadez Ingersoll"
 date: "2024-09-10"
 output: html_document
 ---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Set working directory, load packages
+```{r}
+setwd("/projectnb/coral/MVI_Oculina/Oculina_sc_manuscript/SingleCell")
+
+library(stringr)
+library(deldir)
+library(Seurat)
+library(tidyverse)
+library(openxlsx)
+library(MAST)
+library(dplyr)
+library(microseq)
+library(sctransform)
+library(RColorBrewer)
+library(ggplot2)
+library(glmGamPoi)
+library(gplots)
+library(ggplot2)
+library(pheatmap)
+library(superheat)
+library(purrr)
+library(tibble)
+library(DESeq2)
+library(ggrepel)
+library(cowplot)
+library(devtools)
+```
+
+The proper reference files for astrangia are in the directory /projectnb/coral/MVI_Oculina/10X_22_ApV2/outs/fastq_path/new_Ap_ref
+The gtf is called apoculata_collapsed.gtf and the genome is called apoculata.genome.fasta
+
+Concat apoc genome and apoc gtf to the algae genome and gtf
+```{bash}
+cat ./new_Ap_ref/apoculata.genome.fasta algae_reftranscriptome.fasta > new_holobiont_genome.fasta
+
+cellranger mkgtf ./new_Ap_ref/apoculata_collapsed.gtf ./new_Ap_ref/apoculata_collapsed_filt.gtf --attribute=gene_biotype:protein_coding
+
+cat ./new_Ap_ref/apoculata_collapsed_filt.gtf algae_ref5_filt.gtf > new_holobiont_gtf.gtf
+```
+
+Mkref for reference of concatenated host and sym files
+
+
+Skipping to line 200 R analysis for now
+
+Make reference files; might have to think about sym reads in here, but can come back
+
+```{r}
+# load gene annotations
+annotations <- read.delim("./files/apoculata_GeneAnnotation_combined.txt", sep="\t", header=TRUE)
+head(annotations)
+
+#seq2iso <- annotations %>%
+ # mutate(gene = gsub("evm.model.", "EVM%20prediction%20", Protein_ID)) %>%
+ # select(Protein_ID, gene)
+seq2iso <- annotations %>%
+  mutate(gene = gsub("model", "TU", Protein_ID)) %>%
+  mutate(gene=gsub("_", ".", gene)) %>%
+  select(Protein_ID, gene)
+head(seq2iso)
+write.table(seq2iso, file="./files/astrangia_seq2iso_new.txt", quote=F, sep="\t", row.names=FALSE)
+
+gene = annotations %>%
+  mutate(gene_symbol = gsub("_.*", "", Swiss.Prot_Hit)) %>%
+  mutate(gene_symbol = gsub(".*[|]", "", gene_symbol))%>%
+       mutate(swissprot_symbol = gsub(" OS=.*", "", Swiss.Prot_Description)) %>%
+  mutate(trembl_symbol = gsub(" OS=.*", "", Trembl_Description)) %>%
+  mutate(ncbi_symbol = gsub(" OS=.*", "", NCBI_Description)) %>%
+  select(Protein_ID, gene_symbol, swissprot_symbol, trembl_symbol, ncbi_symbol)
+head(gene)
+
+seq2iso2gene <- seq2iso %>%
+  left_join(gene)
+head(seq2iso2gene)
+seq2iso2gene <- 
+    transform(
+        seq2iso2gene ,
+        gene_symbol =
+            ifelse( is.na(gene_symbol), gene , gene_symbol)) %>%
+  mutate(gene_symbol = make.names(gene_symbol, unique = TRUE))
+head(seq2iso2gene)
+write.table(seq2iso2gene, file="./files/astrangia_seq2iso2gene_new.txt", quote=F, sep="\t", row.names=FALSE)
+
+gene_symbol_only <- seq2iso2gene[,c(2,3)] %>%
+  column_to_rownames(var="gene")
+gene2gene_symbol <- seq2iso2gene[,c(2,3)]
+```
+
+Prepare data from cellranger
+```{r}
+#Set up your experiment
+results_dir <- "catcat_analysis"
+proj_name_lead <- "Oculina_catcat"
+
+dir.create(results_dir, showWarnings = F)
+proj_name <- paste0(results_dir, "/", proj_name_lead)
+
+#these are not on the github or in the Rproject
+F8.host.data <- Read10X(data.dir <- "/projectnb/coral/MVI_Oculina/10X_22_ApV2/outs/fastq_path/A3_cat_cat_new/outs/filtered_feature_bc_matrix/")
+F1.host.data <- Read10X(data.dir <- "/projectnb/coral/MVI_Oculina/10X_22_ApV2/outs/fastq_path/S3_cat_cat_new/outs/filtered_feature_bc_matrix/")
+
+# check for duplicated barcodes(column names) within a dataset
+any(duplicated(x = colnames(x = F8.host.data)))
+#FALSE
+any(duplicated(x = colnames(x = F1.host.data)))
+#FALSE
+
+# Rename columns to avoid trouble when merging data sets
+colnames(x = F8.host.data) <- paste('F8', colnames(x = F8.host.data), sep = '_')
+colnames(x = F1.host.data) <- paste('F1', colnames(x = F1.host.data), sep = '_')
+rownames(x = F8.host.data) <- gsub("_", "-", rownames(F8.host.data))
+head(rownames(F8.host.data))
+rownames(x = F1.host.data) <- gsub("_", "-", rownames(F1.host.data))
+head(rownames(F1.host.data))
+
+#rename rownames
+length(gene2gene_symbol$gene_symbol)
+#45867
+length(rownames(F8.host.data))
+#75579 bc of symbiont gtf input
+length(rownames(F1.host.data))
+#75579 bc of symbiont gtf input
+
+#replace the "merged" from F8_rownames with "" 
+#------->>>>>>> THIS MIGHT CHANGE
+####---->>>> no longer doing this, now instead of the "merged" the isoforms are in the format: "evm.TU.Ap11.1003-evm.TU.Ap11.1005"
+F8.host.data_names <- F8.host.data
+F8_host_rownames <- as.data.frame(rownames(F8.host.data_names))
+colnames(F8_host_rownames) <-paste("X")
+#F8_host_rownames$X <- gsub("MERGED%3A%20", "", F8_host_rownames$X)
+F8_host_gene2gene_symbol <- F8_host_rownames %>%
+  left_join(gene2gene_symbol, by=c("X"="gene"))
+F8_host_gene2gene_symbol <- 
+    transform(
+        F8_host_gene2gene_symbol ,
+        gene_symbol =
+            ifelse( is.na(gene_symbol), X, gene_symbol)) %>%
+  mutate(gene_symbol = make.names(gene_symbol, unique = TRUE))
+rownames(x=F8.host.data_names) <- F8_host_gene2gene_symbol$gene_symbol
+head(rownames(F8.host.data_names))
+head(rownames(F8.host.data))
+
+#do the same for F1
+F1.host.data_names <- F1.host.data
+F1_host_rownames <- as.data.frame(rownames(F1.host.data_names))
+colnames(F1_host_rownames) <-paste("X")
+#F1_host_rownames$X <- gsub("MERGED%3A%20", "", F1_host_rownames$X)
+F1_host_gene2gene_symbol <- F1_host_rownames %>%
+  left_join(gene2gene_symbol, by=c("X"="gene"))
+F1_host_gene2gene_symbol <- 
+    transform(
+        F1_host_gene2gene_symbol ,
+        gene_symbol =
+            ifelse( is.na(gene_symbol), X, gene_symbol)) %>%
+  mutate(gene_symbol = make.names(gene_symbol, unique = TRUE))
+rownames(x=F1.host.data_names) <- F1_host_gene2gene_symbol$gene_symbol
+head(rownames(F1.host.data_names))
+head(rownames(F1.host.data))
+
+### Initialize the Seurat object with the raw, non-normalized data
+
+F8 <- CreateSeuratObject(counts = F8.host.data_names, 
+                             min.cells = 3, 
+                             min.features = 200, 
+                             project = "F8_host")
+F1 <- CreateSeuratObject(counts = F1.host.data_names, 
+                             min.cells = 3, 
+                             min.features = 200, 
+                             project = "F1_host")
+
+### add metadata to objects
+
+# add individual
+F8[["individual"]] <- "A_2F8"
+F8@meta.data$individual <- as.factor(F8@meta.data$individual)
+F1[["individual"]] <- "S_2F1"
+F1@meta.data$individual <- as.factor(F1@meta.data$individual)
+
+# add symstate
+F8[["symstate"]] <- "apo"
+F8@meta.data$symstate <- as.factor(F8@meta.data$symstate)
+F1[["symstate"]] <- "sym"
+F1@meta.data$symstate <- as.factor(F1@meta.data$symstate)
+
+# add genet
+F8[["genet"]] <- "F"
+F8@meta.data$genet <- as.factor(F8@meta.data$genet)
+F1[["genet"]] <- "F"
+F1@meta.data$genet <- as.factor(F1@meta.data$genet)
+
+str(F8@meta.data)
+str(F1@meta.data)
+
+F8
+#24844 features across 3828 samples within 1 assay 
+#Active assay: RNA (24844 features, 0 variable features)
+
+F1
+#29251 features across 3151 samples within 1 assay 
+#Active assay: RNA (29251 features, 0 variable features)
+```
+
+Quality control and filtering
+```{r}
+obj.list <- list(F8, F1)
+
+rownames(obj.list[[1]]) %>% as.data.frame() %>% View()
+
+for (i in 1:length(obj.list)) {
+  obj.list[[i]] <- PercentageFeatureSet(obj.list[[i]], pattern = "^MT-", col.name = 'percent.mt')
+  obj.list[[i]][["per.mito.bin"]] <- ifelse(obj.list[[i]][["percent.mt"]] > 10, "> 10%", ifelse(obj.list[[i]][["percent.mt"]] > 5, "5%-10%", ifelse(obj.list[[i]][["percent.mt"]] > 2.5, "2.5%-5%", "< 2.5%")))
+}
+
+plts_qc <- lapply(obj.list, function(x) VlnPlot(x, 
+                                             features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), 
+                                             group.by = "individual",
+                                             pt.size = .25,
+                                             ncol = 3))
+
+patchwork::wrap_plots(plts_qc, ncol = 1)
+```
+
+Perform integration of the two seurat objects, according to seurat v5
+```{r}
+F8_new <- obj.list[[1]]
+F1_new <- obj.list[[2]]
+obj.list_merge <- merge(F8_new, F1_new)
+obj.list_merge
+#31026 features across 6979 samples within 1 assay 
+#Active assay: RNA (31026 features, 0 variable features)
+# 2 layers present: counts.F8_host, counts.F1_host
+
+#following the "Perform analysis without integration" first:
+# run standard anlaysis workflow
+merge <- NormalizeData(obj.list_merge)
+merge <- FindVariableFeatures(merge)
+merge <- ScaleData(merge, features = rownames(obj.list_merge@assays$RNA@features))
+merge <- RunPCA(merge)
+merge <- FindNeighbors(merge, dims = 1:30, reduction = "pca")
+merge <- FindClusters(merge, resolution = 2, cluster.name = "unintegrated_clusters")
+#41 clusters; unintegrated and with a high res
+
+merge <- RunUMAP(merge, dims = 1:30, reduction = "pca", reduction.name = "umap.unintegrated")
+DimPlot(merge, reduction = "umap.unintegrated", group.by = c("individual", "seurat_clusters"))
+#the individuals overlap really well
+
+#"Perform integration"
+merge <- IntegrateLayers(object = merge, method = CCAIntegration, orig.reduction = "pca", new.reduction = "integrated.cca",
+    verbose = TRUE)
+# re-join layers after integration
+merge[["RNA"]] <- JoinLayers(merge[["RNA"]])
+
+merge <- FindNeighbors(merge, reduction = "integrated.cca", dims = 1:30)
+merge <- FindClusters(merge, resolution = 0.5)
+#28 clusters at res of 0.5
+#22 clusters at res of 0.25
+
+merge <- RunUMAP(merge, dims = 1:30, reduction = "integrated.cca")
+
+# Visualization
+plt1merge <- DimPlot(merge, reduction = "umap", label = T, shuffle=TRUE)
+plt2merge <- DimPlot(merge, reduction = "umap", group.by = "individual", shuffle=TRUE)
+plt3merge <- DimPlot(merge, reduction = "umap", group.by = "symstate", shuffle=TRUE)
+#saved plt1_plt3_merge_091124 as landscape 12x6
+
+#keeping with res of 0.5 for now, can merge clusters later
+```
+
+```{r}
+DefaultAssay(merge) <- "RNA"
+merge@meta.data$seurat_clusters <- as.numeric(as.character(merge@meta.data$seurat_clusters))+1
+Idents(merge)<- "seurat_clusters"
+merge$seurat_clusters
+merge@active.ident <- factor(x = merge@active.ident, levels = 1:28)
+merge@active.ident
+
+saveRDS(merge, paste0(proj_name, '_clean_091124.rds'))
+merge <- readRDS(file.choose())
+```
+
+One method for finding marker genes, there are multiple ways of doing this
+```{r}
+markers <- FindAllMarkers(merge, 
+                          min.pct = -Inf, 
+                          logfc.threshold = .5, 
+                          only.pos = T, 
+                          test.use = "MAST",
+                          return.thresh = 0.01,
+                          latent.vars = c('percent.mt', 'nFeature_RNA'))
+
+
+
+markers <- markers %>%
+  filter(avg_log2FC > 0)
+nrow(markers)
+#29018
+
+markers_fullnames <- markers
+rownames(markers_fullnames) =NULL
+head(markers_fullnames)
+head(seq2iso2gene)
+col_names <- c("p_val", "avg_log2FC", "pct.1", "pct.2", "p_val_adj", "cluster", "gene_symbol")
+colnames(markers_fullnames) <- col_names
+markers_fullnames <- markers_fullnames %>%
+  left_join(seq2iso2gene) %>%
+  write_csv('./files/Oculina_clean_markers_091124_logFC.5.csv')
+
+markers_fullnames <- read.csv(file.choose())
+head(markers_fullnames)
+
+markers_strong <- markers_fullnames %>%
+  filter(p_val_adj<0.05) %>%
+  filter(pct.1 > 0.1)
+
+nrow(markers_strong)
+#8546
+write_csv(markers_strong, "./files/SuppDataset_oculina_markers_strong_091124.csv")
+
+#strong symbiont genes really only in cluster 21, a few others scattered
+```
+
+###Now work on identifying your cell types
+
+make "oculina" to manipulate around with and keep "merge" unmanipulated
+```{r}
+oculina <- merge
+merge@meta.data
+merge@active.ident
+head(merge)
+```
+
+First, look at symbiont genes
+```{r}
+Sym.1 <- c("Sym.205261.c0.g1.i1") #marker for 21, sym only
+Sym.2 <- c("Sym.84646.c0.g2.i1") #marker for 1 but in a lot of cells and apo and sym; almost certainly not actually a sym read but a mismatch
+Sym.3 <- c("Sym.84646.c0.g2.i1") #same as sym.2
+VlnPlot(object =oculina, features = Sym.3, pt.size= 0,combine = F,assay = "RNA", split.by = "symstate") 
+```
+
+Use genes of interest identified in previous cnidarian datasets
+```{r}
+#TF highly expressed in spist cnidocytes
+pax6 <- c("PAX6", "PAX6.1", "PAX6.2") #PAX6.2 marker for 4, 9, 14
+six1 <- c("SIX1B", "SIX1B.1") #SIX1B marker for 12
+six2 <- c("SO") #ns
+
+#TF highly expressed in spist gastrodermis etc
+foxc2 <- c("FXC2B") #spist gastro muscle; ns
+deaf1 <- c("DEAF1") #spist gastro muscle; --> marker for 2, 3
+erg <- c("ERG") #all spist gastros, --> marker for 2 but high in lots of cells
+fli1 <- c("FLII") #same spist as erg; marker for 2
+etv6 <- c("ETV6","ETV6.1") #gastro algal hosting in spist, --> 6.1 is marker for 2
+elf2 <- c("ELF2") #gastro algal hosting in spist, ns
+elf4 <- c("ELF4", "ELF4.1", "ETS1A.3") #gastro algal hosting in spist --> marker for 2, 3, 12, 17; ELF4.1 also in some others (4, 7, 14, 20)
+spdef <- c("SPDEF") #gastro algal hosting in spist, marker for 2, 9, 12 (also in 13, 22)
+usf2 <- c("USF2", "USF2.1") #in gastrodermis in spist, ns
+otx1 <-c("OTX1", "OTX1B", "OTX1B.1") #gastro in spist, markers for 1 and 2
+six4_6 <- c("SIX4", "SIX6") #ns
+
+#TFs for neuron
+gata2 <- c("GATA2") #marker for 26
+pax7 <- c("PAX7", "PAX7.1", "PAX7.2") #markers for 4, 9, 14, highest in 14
+asc <- c("ASCC1", "ASCC2", "ASCC3") #ns
+pou4 <- c("PO4F3") #marker for 12, 20, 27, 28; highest in 27 and 28
+islet <- c("ICA69") #ns but kinda in 28
+tbx20 <- c("TBX20.2") #marker for 12, 17, 22; highest in 17
+
+#TFs for Immune
+irf1 <- c("IRF1") #marker gene for 15
+irf2 <- c("IRF2", "IRF2.1", "IRF2.2", "IRF2.3") #markers 15
+nfat5 <- c("NFAT5.4") #marker gene for 3 but high in everything
+atf3 <- c("ATF3") #marker for 15
+atf5 <- c("ATF5") #marker for 10 and 22 but in all cells
+
+#TFs for spist epidermis 
+pax2 <- c("PAX2", "PAX2A", "PAX2A.1", "PAX2A.2") #markers for 26 (pax2) and 28 (pax2a) but kinda weak
+pax8 <- c("PAX8", "PAX8.1", "PAX8.2", "PAX8.3", "PAX8.4", "PAX8.5", "PAX8.6", "PAX8.7") #ns
+bach <- c("BACH", "BACH.1") #ns
+nfe2 <- c("NF2L1") #marker for 2 but high in everything
+
+#TFs for spist gland
+rfx <- c("RFX6", "RFX4") #marker for 10, 18 (RFX6) and 16, 22 (RFX4)
+
+#TFs for calicoblast
+dnajc21 <- c("DJC21") #this is spist zf-met.like DNAJC21; marker for 25
+
+###random genes of interest from spist paper
+#cnidocyte (minicollagen but we don't have that)
+tal2 <- c("TAL2.4") #tachylectins or galactosamine binding lectins, marker for 8, 16; mostly 8
+
+#immune
+alps <- c("ALPS", "ALPS.1") #Anti-lipopolysaccharide factor, marker for 15, immune cell linked in spistillata; also 2
+ikka <- c("IKKA") #marker for 7, 10, 18
+ikbp1 <- c("IKBP1") #marker for 25
+ilf2 <- c("ILF2") #marker for 1 and 25
+hsp70 <- c("HSP71.1", "HSP71", "HSP7C.1") #marker for 15 (first), and 2 (second and third, also in all)
+hsp90 <- c("H90A1", "HSP97") #first is marker for 1 and 2 but in all cells; second is marker for 15 and 1 also in a lot of cells
+alphaA <- c("L2EFL.1") #alpha-crystallin A, marker for 10 and 13
+alphaB <- c("CRYAB") #alpha-crystallin B, marker for 15
+cathepsin <- c("CATL.1", "CATL.3", "CATB.1") #lots of cathepsin marker genes in 1, 2, 3, and 15
+bcl2 <- c( "BCL2") #bcl2 is marker for 15 and others; in lots of cells
+#other random immune genes
+nfkb1 <- c("NFKB1", "NFKB1.1") #ns
+my881 <- c("MY88A") #ns
+bcl3 <- c("BCL3", "BCL3.1") #ns
+lbp <- c("LBP", "LBP.1", "LBP.2", "LBP.3") # lbp.3 and lbp.1 markers for 15
+prosaposin <- c("SAP") # marker for 1, 2
+endop <- c("ENDD1", "ENDD1.1", "evm.TU.Ap10.801") #endonuclease domain containing protein; idk if TF; last is marker for 15
+cd36 <- c("CD36", "CD36.1", "CD36.2") #ns
+sting <- c("STING", "STING.1", "STING.2", "STING.3", "STING.4", "STING.5") #ns
+ifih1 <- c("IFIH1", "IFIH1.1", "IFIH1.2") #ns interferon-induced helicase c domain-containing protein
+dock <- c("DOCK1", "DOCK3", "DOCK7", "DOCK9") #dedicator of cytokinesis; markers for 3
+gbp6 <- c("GBP6.6", "GBP6", "GBP6.2") #marker for 15, guanylate binding protein 6; NICE (also markers for 2 and 10)
+rab43 <- c("RAB43", "RAB43.1") #ns
+bag <- c("BAG1", "BAG4", "BAG.2", "BAG.1") #BAG family molecular chaperone regulator 1 and 4 (ns) and IgA FC receptor; bag.1 and bag.2 are markers for 6
+apoptosis <- c("BFAR", "BAX", "SIVA", "AR1", "CFLAR") #apoptosis regulators; markers for 2/3/12/17 (AR1) - mostly 2
+casp3 <- c("CASP3.2") #caspase3 marker for 15
+mvp <- c("MVP", "MVP.1", "MVP.2") #major vault protein; MVP is in a lot of things; MVP marker for 56 and high in others
+ttc28 <- c("TTC28.15", "TTC28.32", "TTC28.26", "TTC28.240", "TTC28.118", "TTC28.152") #markers for many including 15; Tetratricopeptide repeat protein 28 
+
+#gastro
+tropomyosin <- c("TPM2", "TPM2.1", "TPM.1", "TPM.2", "TPM.6") #markers for many (1,2,4,5,6,9,10,11,13,14,15)
+apoB <- c("APOB","APOB.1") #apolipoprotein markers for 1, 2, 3; also in 7
+aplp <- c("APLP") #apolipophorin marker for 1, 2, 3; also in 7, 11, 12, 21, 28 a bit
+galk <- c("GALK1", "GALK2") #galactokinase; markers for 1 and 3
+carb <- c("CAH2", "CAH2.2", "CAH2.5", "CAH2.6") #carbonic anhydrase; high exp in algal-hosting cells in spist; markers for 1, 4, 6 (many), 9, 14, 16, 19
+npc2 <- c("NPC2", "NPC2.5", "NPC2.6", "NPC2.7") #markers for 1 and 15
+
+#others to note some of which are markers: granulins (1, 2, 3), S2611 (transporter, 1, 3), lysosome associated things (LAMP1 in 1, 2, 15), GRP78 (glucose-reg, 1), PLCL.5 and .1 (2, 3, 18), glutamic acid-rich proteins in 1, 4, 5, 7, 9, 14, 15; CMLO2.3 and NAT8L (acetyltransf., 2, 3; 2, 3); acid phosphatase (1, 2, 3, 23)
+
+#mitotic/germline
+#look for cyclins and tubulins
+sy65 <- c("SYT1", "SY65", "CO6A5.7", "ESYT3") #synaptotagmin, mitotic marker in spist; first is in 14; second in 10; third is in 14; fourth is in 4, 5, 9, 14, 20
+
+#epidermis
+pxdn <- c("PXDN.2", "PXDN.10", "PXDN.18", "PXDN.16") #first high in 4 and 9; second high in 9; third in 28; fourth in 4/9/14
+moxd1 <- c("MOXD1.11", "MOXD1.1", "MOXD1") #DBH-like monooxygenase protein, markers for many; these high in 10
+gst1 <- c("GST1.2","MGST1") #in 1, 6, 10, 11, 15
+cadh <- c("FAT4.10", "FAT2.3", "PCDL") #FAT4s in 1, 2, 3, 19; fat2 in 12; pcdls in 5, 20, 27
+
+#neuron
+pkd1 <- c("PKD1.1", "PKD1.2", "PKD1.4") #markers for 12, 16, 20
+dclk2 <- c("DCLK2.1", "DCLK2.2") #markers for 5, 10, 17, 20, 28 ; in many cells
+cel3b <- c("CEL3B") #chymotrypsin-like elastase family member 3B, marker for 5 and 20
+cabp5 <- c("CABP5") #calcium binding protein 5, calcium gated channel (neuron-y), marker for 17
+trpa <- c("TRPA1.17") #marker for many, this one highest in 16, 23
+atoh8 <- c("ATOH8") #neuron marker in spist, ns
+kcn <- c("KCNF1", "KCNAE") #potassium voltage gated channel thing markers for 5, 11, 12, 20; 12, 13, 17, 20 --> mostly 12
+cbpd <- c("CBPA2.2", "CBPD.3", "CBPB1", "CBPA4") #carboxypeptidase, marker for 18
+lwa <- c("LWA", "LWA.1") #ns
+chymo <- c("CEL3B", "CPP1.13", "CTRL.2", "CEL2A.4", "PLMN.2", "TMPS3", "CTRA.1") #all could be chymptrypsin homologs; in 5/20 (CEL3B); 22/23 (TMPS3)
+cabo <- c("CABO.1") #squidulin (calmodulin homolog) marker for many including 5, 17, 20
+calm <- c("CALM.13") #calmodulin, many calmodulin markers including for 5, 11, 20
+cac1 <- c("CAC1A") #marker for many; voltage-dep calcium channel; 5; 12, 13, 17, 20, 22, 27
+scn <- c("SCN2A") #marker for 5, 11, 12, 20, 27; sodium channel
+
+#gland
+olm2 <- c("OLM2A.6", "OLM2B") #olfactomedin, markers 18
+muc5a <- c("MUC5A") #mucin 5AC marker for 8, 16, 19, 23
+mlp <- c("MLP.12", "MLP") #mucin-like proteins, mlps in many, these mostly in 8/9/14/16/19/23
+#some mlrp integumentary mucins in 8, 13, 23 and others
+#lots of fbc fibrinogen in 18
+
+#calicoblast
+hemopexin <- c("EPRA1.2") #marker for 23 but still not great
+myof <- c("MYOF","MYOF.5") #myoferlin/dysferlin markers many cells including 23
+
+VlnPlot(object =oculina, features = dnajc21, pt.size= 0,combine = F,assay = "RNA") 
+```
+
+
+
