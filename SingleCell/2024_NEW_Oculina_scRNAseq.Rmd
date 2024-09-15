@@ -395,6 +395,16 @@ rfx <- c("RFX6", "RFX4") #marker for 10, 18 (RFX6) and 16, 22 (RFX4)
 
 #TFs for calicoblast
 dnajc21 <- c("DJC21") #this is spist zf-met.like DNAJC21; marker for 25
+prdm9 <- c("PRDM6.7") #marker for 14 and 20, PRDM9 in description, kinda weak
+myb <- c("evm.TU.Ap3.186") #myb-like, marker for 1, 3, 25; mostly 25
+ncor <- c("NCOR1", "NCOR1.1") #markers for 3 but also NCOR1 in 25
+ssrp1 <- c("SSRP1") #marker for 7
+dmrt <- c("DMRTD", "DMTA2.3") #2.3 is marker for 2, 4, 17 but all weak
+csd <- c("CSD") #ns
+atf <- c("ZHANG", "ZHANG.1", "CREM") #ZHANGs markers for 3 but weak, crem ns
+dbp <- c("DBP", "DBP.2", "HLF.2", "HLF.3", "TEF") #dbps markers for 5; hlf markers for 5 and 1; tef ns
+atf2 <- c("ATF2") #ATF2 marker for 28 but weak
+# forkhead (fox) tf marker for many cells including 25
 
 ###random genes of interest from spist paper
 #cnidocyte (minicollagen but we don't have that)
@@ -476,9 +486,485 @@ mlp <- c("MLP.12", "MLP") #mucin-like proteins, mlps in many, these mostly in 8/
 #calicoblast
 hemopexin <- c("EPRA1.2") #marker for 23 but still not great
 myof <- c("MYOF","MYOF.5") #myoferlin/dysferlin markers many cells including 23
+adam <- c("ADAM8.2") #metallopeptidase marker for 8 and 26, mostly 26
+# a lot of Uncharacterized skeletal organic matrix protein in 18, some in 23
+# hemicentin is in many cells and there are many orthologs
+#sodium bicarbonate transporters in 6
 
-VlnPlot(object =oculina, features = dnajc21, pt.size= 0,combine = F,assay = "RNA") 
+VlnPlot(object =oculina, features = adam, pt.size= 0,combine = F,assay = "RNA") 
 ```
 
+Predictions:
+Gastro:
+- 1 (otx1, tropomyosin, apoB, galk, carb, npc2, granulins, S2611, LAMP1, GRP78, glutamic acid-rich, acid phosphatase)
+- 2 (DEAF1, erg, fli1, etv6, elf4, spdef, otx1, apoB, tropomyosin, granulins, LAMP1, PLCL, acetyltransf., acid phosphatase)
+- 3 (DEAF1, elf4, apoB, aplp, galk, granulins, S2611, PLCL, acetyltransf., acid phosphatase)
+  - 4 (elf4, carb, tropomyosin, glutamic acid-rich)
+  - 5 (tropomyosin, glutamic acid-rich)
+  - 6 (carb, tropomyosin)
+- 7 (elf4, apoB, aplp, glutamic acid-rich)
+  - 9 (spdef, carb, tropomyosin, glutamic acid-rich)
+  - 10 (tropomyosin)
+  - 11 (aplp, tropomyosin)
+  - 12 (spdef, elf4, aplp)
+  - 13 (spdef, tropomyosin)
+  - 14 (elf4, carb, tropomyosin, glutamic acid-rich)
+  - 15 (tropomyosin, npc2, LAMP1, glutamic acid-rich)
+  - 17 (elf4)
+  - 16 (carb)
+  - 18 (PLCL)
+  - 19 (carb)
+  - 20 (elf4)
+- 21 (aplp)
+  - 22 (spdef)
+  - 23 (acid phosphatase)
+  - 28 (aplp)
+
+Epidermis
+  - 1 (gst1, FAT4s)
+  - 2 (nfe2, FAT4s)
+  - 3 (FAT4s)
+- 4 (pxdn)
+  - 5 (pcdls)
+- 6 (gst1)
+- 9 (pxdn)
+  - 10 (moxd1, gst1)
+  - 11 (gst1)
+  - 12 (fat2)
+- 14 (pxdn)
+  - 15 (gst1)
+  - 19 (FAT4s)
+  - 20 (pcdls)
+  - 26 (pax2)
+  - 27 (pcdls)
+  - 28 (pax2, pxdn)
+  
+Neuron
+  - 4 (pax7)
+- 5 (dclk2, cel3b, kcn, chymo, cabo, calm, cac1, scn)
+  - 9 (pax7)
+  - 10 (dclk2)
+  - 11 (kcn, calm, scn)
+- 12 (pou4, tbx20, pkd1, kcn, cac1, scn)
+  - 13 (kcn, cac1)
+  - 14 (pax7)
+  - 16 (pkd1, trpa)
+- 17 (tbx20, dclk2, cabp5, kcn, cabo, cac1)
+  - 18 (cbpd)
+- 20 (pou4, pkd1, dclk2, cel3b, kcn, chymo, cabo, calm, cac1, scn)
+  - 22 (tbx20, chymo, cac1)
+  - 23 (trpa, chymo)
+  - 27 (pou4, cac1, scn)
+  - 26 (gata2)
+  - 28 (pou4, dclk2)
+  
+Immune
+- 15 (irf1, irf2, atf3, alps, hsp70, hsp90, alphaB, cathepsin, bcl2, lbp, endop, gbp6, casp3, ttc28)
+
+Gland
+  - 8 (muc5a, mlp)
+  - 9 (mlp)
+  - 10 (rfx)
+  - 13 (mucins and integumentary etc)
+  - 14 (mlp)
+  - 16 (rfx, muc5a, mlp)
+  - 18 (rfx, olm2)
+  - 19 (muc5a, mlp)
+  - 22 (rfx)
+  - 23 (muc5a, mlp)
+  - 24 (myof and dysf etc)
+  
+Calicoblast
+  - 1 (myb, dbp)
+  - 2 (dmrt)
+  - 3 (myb, ncor, atf)
+  - 4 (dmrt)
+  - 5 (dbp)
+  - 7 (ssrp1)
+  - 8 (adam)
+  - 14 (prdm9)
+  - 17 (dmrt)
+  - 18 (USOM)
+  - 20 (prdm9)
+  - 23 (hemopexin, myof, USOM)
+- 25 (dnajc21, myb, ncor, fox)
+  - 26 (adam)
+  - 28 (atf2)
+  
+Cnidocyte
+- 8 (tal2)
+- 16 (tal2)
+
+1 [Gastrodermis]
+2 [Gastrodermis]
+3 [Gastrodermis]
+4 [Epidermis]
+5 [Neuron]
+6 [Epidermis]
+7 [Gastrodermis]
+8 [Cnidocyte]
+9 [Epidermis]
+10 [Gland] ?
+11 [Epidermis] ?
+12 [Neuron]
+13 [Gland] ?
+14 [Epidermis]
+15 [Immune Cell]
+16 [Cnidocyte]
+17 [Neuron]
+18 [Gland]
+19 [Epidermis] ?
+20 [Neuron]
+21 [Algal-hosting]
+22 [Gland] ?
+23 [Gland] ?
+24 [Gland] ?
+25 [Calicoblast] ? for now
+26 [Neuron]
+27 [Neuron]
+28 [Neuron]
+
+```{r}
+oc_markers_pre<- FindAllMarkers(oculina, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
+nrow(oc_markers_pre)
+#6259
+
+oc_markers_pre %>% group_by(cluster) %>% top_n(20, avg_log2FC) -> top20_pre
+top20_pre
+nrow(top20_pre)
+#560
+
+color<-colorRampPalette(brewer.pal(n=9, name="Reds"),bias=0.5)(20)
+
+DoHeatmap(oculina, features = top20_pre$gene, label=T) + theme(axis.text.y= element_text(size=0)) + scale_fill_gradientn(colors=color)
+```
+
+Rename cell clusters with new names
+```{r}
+oculina_named_h <- RenameIdents(oculina, "1" = "Gastrodermis 1")
+oculina_named_h <- RenameIdents(oculina_named_h, "2" = "Gastrodermis 2")
+oculina_named_h <- RenameIdents(oculina_named_h, "3" = "Gastrodermis 3")
+oculina_named_h <- RenameIdents(oculina_named_h, "4" = "Epidermis 1")
+oculina_named_h <- RenameIdents(oculina_named_h, "5" = "Neuron 1")
+oculina_named_h <- RenameIdents(oculina_named_h, "6" = "Epidermis 2")
+oculina_named_h <- RenameIdents(oculina_named_h, "7" = "Gastrodermis 4")
+oculina_named_h <- RenameIdents(oculina_named_h, "8" = "Cnidocyte 1")
+oculina_named_h <- RenameIdents(oculina_named_h, "9" = "Epidermis 3")
+oculina_named_h <- RenameIdents(oculina_named_h, "10" = "Gland 1")
+oculina_named_h <- RenameIdents(oculina_named_h, "11" = "Epidermis 4")
+oculina_named_h <- RenameIdents(oculina_named_h, "12" = "Neuron 2")
+oculina_named_h <- RenameIdents(oculina_named_h, "13" = "Gland 2")
+oculina_named_h <- RenameIdents(oculina_named_h, "14" = "Epidermis 5")
+oculina_named_h <- RenameIdents(oculina_named_h, "15" = "Immune Cell")
+oculina_named_h <- RenameIdents(oculina_named_h, "16" = "Cnidocyte 2")
+oculina_named_h <- RenameIdents(oculina_named_h, "17" = "Neuron 3")
+oculina_named_h <- RenameIdents(oculina_named_h, "18" = "Gland 3")
+oculina_named_h <- RenameIdents(oculina_named_h, "19" = "Epidermis 6")
+oculina_named_h <- RenameIdents(oculina_named_h, "20" = "Neuron 4")
+oculina_named_h <- RenameIdents(oculina_named_h, "21" = "Algal-Hosting")
+oculina_named_h <- RenameIdents(oculina_named_h, "22" = "Gland 4")
+oculina_named_h <- RenameIdents(oculina_named_h, "23" = "Gland 5")
+oculina_named_h <- RenameIdents(oculina_named_h, "24" = "Gland 6")
+oculina_named_h <- RenameIdents(oculina_named_h, "25" = "Calicoblast")
+oculina_named_h <- RenameIdents(oculina_named_h, "26" = "Neuron 5")
+oculina_named_h <- RenameIdents(oculina_named_h, "27" = "Neuron 6")
+oculina_named_h <- RenameIdents(oculina_named_h, "28" = "Neuron 7")
+
+levels(oculina_named_h)
+levels(oculina_named_h) <- c("Gastrodermis 1", "Gastrodermis 2", "Gastrodermis 3", "Gastrodermis 4", "Algal-Hosting", "Epidermis 1", "Epidermis 2", "Epidermis 3", "Epidermis 4", "Epidermis 5", "Epidermis 6", "Neuron 1", "Neuron 2", "Neuron 3", "Neuron 4", "Neuron 5", "Neuron 6", "Neuron 7", "Gland 1", "Gland 2", "Gland 3", "Gland 4", "Gland 5", "Gland 6", "Calicoblast", "Cnidocyte 1", "Cnidocyte 2", "Immune Cell")
+levels(oculina_named_h)
+
+DefaultAssay(oculina_named_h) <- "RNA"
+saveRDS(oculina_named_h, paste0(proj_name, '_oculinanamed_clean_091524.rds'))
+oculina_named_h <- readRDS(file.choose())
+
+install.packages("simplecolors")
+library(simplecolors)
+
+gastro_col <- colorRampPalette(c("#C7B8E6", "#330099"))    
+gdc <- gastro_col(5) 
+gdc5 <- c("#C7B8E6", "#A28AD2", "#7D5CBF", "#582EAC", "#330099")
+epi_col <- colorRampPalette(c("#B6D8B6", "#006600"))
+ec <- epi_col(6) 
+ec6 <- c("#B6D8B6", "#91C191", "#6DAA6D", "#489348", "#247C24", "#006600")
+neuro_col <- colorRampPalette(c("#B8DEE6", "#006699"))
+nc <- neuro_col(7)
+nc7 <- c("#B8DEE6", "#99CAD9", "#7AB6CC", "#5CA2BF", "#3D8EB2", "#1E7AA5", "#006699")
+gland_col <- colorRampPalette(c("#E6B8BF","#9C1616"))
+gc <- gland_col(6)
+gc6 <- c("#E6B8BF", "#D7979D", "#C8777B", "#B95659", "#AA3637", "#9C1616")
+
+cols <- c("#C7B8E6", "#A28AD2", "#7D5CBF", "#582EAC", "#330099", "#B6D8B6", "#91C191", "#6DAA6D", "#489348", "#247C24", "#006600", "#B8DEE6", "#99CAD9", "#7AB6CC", "#5CA2BF", "#3D8EB2", "#1E7AA5", "#006699", "#E6B8BF", "#D7979D", "#C8777B", "#B95659", "#AA3637", "#9C1616", "#996633", "#FF9900", "#FFCC66", "#333333")
+
+plot1 <- DimPlot(oculina_named_h, reduction = "umap", label=F, label.size = 3, cols=cols, alpha=0.5) 
+LabelClusters(plot1, id = "ident", size = 3, repel = T,  box.padding = 0.2, fontface="bold") + theme(legend.text=element_text(size=10))
+#umap_oculina_091524 as landscape 8.5x6.5
+
+plot2 <- DimPlot(oculina_named_h, reduction = "umap", label=F,  shuffle=TRUE, group.by = "symstate", cols=c("gray40", "#CC6600"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
+#umap_oculina_aposym_091524 as landscape 6.5x5.5
+```
+
+Reread about comparative analysis for calicoblast
+
+Top 10 and top 20 genes per cluster
+```{r}
+#get the top10 from the re-leveled oculina_named seurat object
+oc_markers_lvld<- FindAllMarkers(oculina_named_h, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
+nrow(oc_markers_lvld)
+#6259
+
+oc_markers_lvld %>% group_by(cluster) %>% top_n(10, avg_log2FC) -> top10_lev
+top10_lev
+nrow(top10_lev)
+#280
+#gives the top 10 genes for each cluster; 28 clusters
+saveRDS(top10_lev, paste0(proj_name, '_top10_releveled_named_091524.rds'))
+
+#do top20
+oc_markers_lvld %>% group_by(cluster) %>% top_n(20, avg_log2FC) -> top20_lev
+top20_lev
+nrow(top20_lev)
+#560
+saveRDS(top20_lev, paste0(proj_name, '_top20_releveled_named_091524.rds'))
+
+DoHeatmap(oculina_named_h, features = top10_lev$gene,label=F, group.colors = cols) + theme(axis.text.y= element_text(size=0)) + scale_fill_gradientn(colors=color)
+#saved as top10_releveled_named_091524 as landscape 9x6
+
+DoHeatmap(oculina_named_h, features = top20_lev$gene,label=F, group.colors = cols) + theme(axis.text.y= element_text(size=0)) + scale_fill_gradientn(colors=color)
+#saved as top20_releveled_named_091524 as landscape 9x6
+```
+
+###analyze specific cell clusters
+
+Gastrodermis 1
+```{r}
+gderm1 <- subset(oculina_named_h, idents = "Gastrodermis 1") 
+
+gderm1 <- FindVariableFeatures(gderm1)
+gderm1 <- ScaleData(gderm1, features = rownames(gderm1@assays$RNA@features))
+gderm1 <- RunPCA(gderm1)
+gderm1 <- FindNeighbors(gderm1, dims = 1:30, reduction = "pca")
+gderm1 <- FindClusters(gderm1, resolution = 0.25)
+#4 clusters
+gderm1 <- RunUMAP(gderm1, reduction="pca", dims=1:30, return.model=TRUE)
+
+#gderm1 <- RunUMAP(gderm1, dims = 1:30, reduction = "integrated.cca")
+
+gderm1@meta.data$seurat_clusters <- as.numeric(as.character(gderm1@meta.data$seurat_clusters))+1
+Idents(gderm1)<- "seurat_clusters"
+gderm1$seurat_clusters
+gderm1@active.ident <- factor(x = gderm1@active.ident, levels = 1:4)
+gderm1@active.ident
+
+levels(gderm1) <- c("1","2","3","4")
+
+plot5 <- DimPlot(gderm1, reduction = "umap", label = T, cols=c("#CC6699", "#33CC99", "#3333FF", "#FF9900"), alpha=0.5)
+#4 clusters
+
+
+plot6 <- DimPlot(gderm1, reduction = "umap", label=F, order=c("sym", "apo"), group.by = "symstate", cols=c("gray40", "#CC6600"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
+
+plot6b <- DimPlot(gderm1, reduction = "umap", label=T, split.by = "symstate", cols=c("#CC6699", "#33CC99", "#3333FF", "#FF9900"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
+#NOW THINGS ARE IN THE RIGHT ORDER!!!!
+
+#saved as umap_gderm1_plot5plot6_new 9x4
+#umap_gderm1_plot6b_new 8x4 landscape
+```
+
+```{r}
+gderm1_topfeat <- TopFeatures(object = gderm1[["pca"]], dim = 1, nfeatures = 20, balanced = TRUE)
+gderm1[["umap"]]@cell.embeddings
+##https://hbctraining.github.io/scRNA-seq_online/lessons/08_SC_clustering_quality_control.html
+columns <- c(paste0("PC_", 1:10),
+            "ident",
+            "umap_1", "umap_2")
+pc_data_gd1 <- FetchData(gderm1, 
+                     vars = columns)
+# Adding cluster label to center of cluster on UMAP
+umap_label_gd1 <- FetchData(gderm1, 
+  vars = c("ident", "umap_1", "umap_2"))  %>%
+  group_by(ident) %>%
+  summarise(x=mean(umap_1), y=mean(umap_2))
+# Plotting a UMAP plot for each of the PCs
+
+map(paste0("PC_", 1:10), function(pc){
+        ggplot(pc_data_gd1, 
+               aes(umap_1, umap_2)) +
+                geom_point(aes_string(color=pc), 
+                           alpha = 0.7) +
+                scale_color_gradient(guide = FALSE, 
+                                     low = "grey90", 
+                                     high = "blue")  +
+                geom_text(data=umap_label_gd1, 
+                          aes(label=ident, x, y)) +
+                ggtitle(pc)
+}) %>% 
+        plot_grid(plotlist = .)
+#saved as gderm1_pcplots_umap_091524
+
+DimPlot(gderm1, reduction = "pca", label=F, order=c("sym", "apo"), group.by = "symstate", cols=alpha(c("gray40", "#CC6600"), 0.5))
+
+stdev_gd1 <- Stdev(gderm1, reduction = "pca")
+
+pca_gd1 <- pc_data_gd1
+pca_gd1$sym_state <- gderm1@meta.data$symstate
+summary(aov(PC_1 ~ sym_state, data = pca_gd1)) #<2e-16 *** 
+summary(aov(PC_2 ~ sym_state, data = pca_gd1)) #0.00547 **
+summary(aov(PC_3 ~ sym_state, data = pca_gd1)) #<2e-16 ***
+summary(aov(PC_4 ~ sym_state, data = pca_gd1)) #2.09e-10 ***
+summary(aov(PC_5 ~ sym_state, data = pca_gd1)) #<2e-16 ***                             
+summary(aov(PC_6 ~ sym_state, data = pca_gd1)) #3.1e-06 ***
+summary(aov(PC_7 ~ sym_state, data = pca_gd1)) #1.33e-12 ***
+summary(aov(PC_8 ~ sym_state, data = pca_gd1)) #<2e-16 ***
+summary(aov(PC_9 ~ sym_state, data = pca_gd1)) #0.53
+summary(aov(PC_10 ~ sym_state, data = pca_gd1)) #0.0118 *
+
+print(gderm1[["pca"]], dims = 1:5, nfeatures = 10)
+
+DefaultAssay(gderm1) <- "RNA"
+gderm1[["RNA"]]$counts<-as.matrix(gderm1[["RNA"]]$counts)+1
+
+#this to look at apo vs sym differentially expressed genes
+gderm1_mark <- FindMarkers(gderm1, ident.1 = "sym", ident.2="apo", group.by = "symstate", test.use="DESeq2", slot = "counts")
+head(gderm1_mark)
+#pretty sure in this case neg lfc means down in sym; pos lfc means up in sym
+gderm1_mark <- rownames_to_column(gderm1_mark, var="gene_symbol")
+
+#look at subcluster marker genes
+gderm1_markers_subclust <- FindAllMarkers(gderm1, 
+                          min.pct = -Inf, 
+                          logfc.threshold = .5, 
+                          only.pos = T, 
+                          test.use = "MAST",
+                          latent.vars = c('percent.mt', 'nFeature_RNA'))
+
+gderm1_markers_subclust
+
+#get apo vs sym differences for subcluster 1 of gderm1
+gderm1_1 <- subset(gderm1, idents="1")
+DefaultAssay(gderm1_1) <- "RNA"
+
+gderm1_1_mark <- FindMarkers(gderm1_1, ident.1 = "sym", ident.2="apo", group.by = "symstate", test.use="DESeq2", slot = "counts")
+###### haven't done below this yet
+gderm1_1_mark <- rownames_to_column(gderm1_1_mark, var="gene_symbol")
+head(gderm1_1_mark)
+
+#get apo vs sym differences for subcluster 2 of gderm1
+gderm1_2 <- subset(gderm1, idents="2")
+DefaultAssay(gderm1_2) <- "RNA"
+##can't get markers here bc only 1 or 2 cells in the apo
+
+#for 3
+gderm1_3 <- subset(gderm1, idents="3")
+DefaultAssay(gderm1_3) <- "RNA"
+
+gderm1_3_mark <- FindMarkers(gderm1_3, ident.1 = "sym", ident.2="apo", group.by = "symstate", test.use="DESeq2", slot = "counts")
+gderm1_3_mark <- rownames_to_column(gderm1_3_mark, var="gene_symbol")
+head(gderm1_3_mark)
+
+# and for 4
+gderm1_4 <- subset(gderm1, idents="4")
+DefaultAssay(gderm1_4) <- "RNA"
+
+gderm1_4_mark <- FindMarkers(gderm1_4, ident.1 = "sym", ident.2="apo", group.by = "symstate", test.use="DESeq2", slot = "counts")
+gderm1_4_mark <- rownames_to_column(gderm1_4_mark, var="gene_symbol")
+head(gderm1_4_mark)
+```
+
+
+
+Algal-Hosting
+```{r}
+alga <- subset(oculina_named_h, idents = "Algal-Hosting") 
+
+alga <- FindVariableFeatures(alga)
+alga <- ScaleData(alga, features = rownames(alga@assays$RNA@features))
+alga <- RunPCA(alga)
+alga <- FindNeighbors(alga, dims = 1:30, reduction = "pca")
+alga <- FindClusters(alga, resolution = 0.25)
+#1 cluster
+alga <- RunUMAP(alga, reduction="pca", dims=1:30, return.model=TRUE)
+
+#gderm1 <- RunUMAP(gderm1, dims = 1:30, reduction = "integrated.cca")
+
+alga@meta.data$seurat_clusters <- as.numeric(as.character(alga@meta.data$seurat_clusters))+1
+Idents(alga)<- "seurat_clusters"
+alga$seurat_clusters
+alga@active.ident <- factor(x = alga@active.ident, levels = 1)
+alga@active.ident
+
+#levels(gderm1) <- c("1","2","3","4")
+
+plot13 <- DimPlot(alga, reduction = "umap", label = T, cols=c("#CC6699"), alpha=0.5)
+#1 cluster
+
+plot14 <- DimPlot(alga, reduction = "umap", label=F, order=c("sym", "apo"), group.by = "symstate", cols=c("gray40", "#CC6600"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
+
+plot14b <- DimPlot(alga, reduction = "umap", label=T, split.by = "symstate", cols=c("#CC6699"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
+
+#saved as umap_algalhost_plot13plot14_new 9x4
+#umap_algalhost_plot14b_new 8x4 landscape
+```
+
+```{r}
+ah_topfeat <- TopFeatures(object = alga[["pca"]], dim = 1, nfeatures = 20, balanced = TRUE)
+alga[["umap"]]@cell.embeddings
+##https://hbctraining.github.io/scRNA-seq_online/lessons/08_SC_clustering_quality_control.html
+columns <- c(paste0("PC_", 1:10),
+            "ident",
+            "umap_1", "umap_2")
+pc_data_ah <- FetchData(alga, 
+                     vars = columns)
+# Adding cluster label to center of cluster on UMAP
+umap_label_ah <- FetchData(alga, 
+  vars = c("ident", "umap_1", "umap_2"))  %>%
+  group_by(ident) %>%
+  summarise(x=mean(umap_1), y=mean(umap_2))
+# Plotting a UMAP plot for each of the PCs
+
+map(paste0("PC_", 1:10), function(pc){
+        ggplot(pc_data_ah, 
+               aes(umap_1, umap_2)) +
+                geom_point(aes_string(color=pc), 
+                           alpha = 0.7) +
+                scale_color_gradient(guide = FALSE, 
+                                     low = "grey90", 
+                                     high = "blue")  +
+                geom_text(data=umap_label_ah, 
+                          aes(label=ident, x, y)) +
+                ggtitle(pc)
+}) %>% 
+        plot_grid(plotlist = .)
+#saved as algalhost_pcplots_umap_091524
+
+DimPlot(alga, reduction = "pca", label=F, order=c("sym", "apo"), group.by = "symstate", cols=alpha(c("gray40", "#CC6600"), 0.5))
+
+stdev_ah <- Stdev(alga, reduction = "pca")
+
+pca_ah <- pc_data_ah
+pca_ah$sym_state <- alga@meta.data$symstate
+summary(aov(PC_1 ~ sym_state, data = pca_ah)) #8.19e-09 ***
+summary(aov(PC_2 ~ sym_state, data = pca_ah)) #0.191
+summary(aov(PC_3 ~ sym_state, data = pca_ah)) #0.142
+summary(aov(PC_4 ~ sym_state, data = pca_ah)) #0.891
+summary(aov(PC_5 ~ sym_state, data = pca_ah)) #0.382
+
+summary(aov(PC_6 ~ sym_state, data = pca_ah)) #0.0578 .
+summary(aov(PC_7 ~ sym_state, data = pca_ah)) #0.761
+summary(aov(PC_8 ~ sym_state, data = pca_ah)) #0.0969 .
+summary(aov(PC_9 ~ sym_state, data = pca_ah)) #0.399
+summary(aov(PC_10 ~ sym_state, data = pca_ah)) #0.926
+
+print(alga[["pca"]], dims = 1:5, nfeatures = 10)
+
+DefaultAssay(alga) <- "RNA"
+alga[["RNA"]]$counts<-as.matrix(alga[["RNA"]]$counts)+1
+
+#this to look at apo vs sym differentially expressed genes
+alga_mark <- FindMarkers(alga, ident.1 = "sym", ident.2="apo", group.by = "symstate", test.use="DESeq2", slot = "counts")
+head(alga_mark)
+#pretty sure in this case neg lfc means down in sym; pos lfc means up in sym
+alga_mark <- rownames_to_column(alga_mark, var="gene_symbol")
+```
 
 
