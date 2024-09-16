@@ -967,4 +967,6 @@ head(alga_mark)
 alga_mark <- rownames_to_column(alga_mark, var="gene_symbol")
 ```
 
+What defines algal-hosting from the gastroderm1_subclust 3 (which is almost entirely sym cells)?
 
+And, if gastroderm1_subclust 3 isn't algal-hosting, what makes the sym vs apo separation so strong in the gastrodermal cells?
