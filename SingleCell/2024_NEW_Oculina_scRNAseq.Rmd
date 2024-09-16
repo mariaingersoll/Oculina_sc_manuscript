@@ -845,22 +845,20 @@ gderm1_1 <- subset(gderm1, idents="1")
 DefaultAssay(gderm1_1) <- "RNA"
 
 gderm1_1_mark <- FindMarkers(gderm1_1, ident.1 = "sym", ident.2="apo", group.by = "symstate", test.use="DESeq2", slot = "counts")
-###### haven't done below this yet
 gderm1_1_mark <- rownames_to_column(gderm1_1_mark, var="gene_symbol")
 head(gderm1_1_mark)
 
 #get apo vs sym differences for subcluster 2 of gderm1
 gderm1_2 <- subset(gderm1, idents="2")
 DefaultAssay(gderm1_2) <- "RNA"
-##can't get markers here bc only 1 or 2 cells in the apo
+gderm1_2_mark <- FindMarkers(gderm1_2, ident.1 = "sym", ident.2="apo", group.by = "symstate", test.use="DESeq2", slot = "counts")
+gderm1_2_mark <- rownames_to_column(gderm1_2_mark, var="gene_symbol")
+head(gderm1_2_mark)
 
 #for 3
 gderm1_3 <- subset(gderm1, idents="3")
 DefaultAssay(gderm1_3) <- "RNA"
-
-gderm1_3_mark <- FindMarkers(gderm1_3, ident.1 = "sym", ident.2="apo", group.by = "symstate", test.use="DESeq2", slot = "counts")
-gderm1_3_mark <- rownames_to_column(gderm1_3_mark, var="gene_symbol")
-head(gderm1_3_mark)
+#can't do marker genes bc fewer than 3 cells in apo
 
 # and for 4
 gderm1_4 <- subset(gderm1, idents="4")
@@ -871,7 +869,203 @@ gderm1_4_mark <- rownames_to_column(gderm1_4_mark, var="gene_symbol")
 head(gderm1_4_mark)
 ```
 
+Gastrodermis 2
+```{r}
+gderm2 <- subset(oculina_named_h, idents = "Gastrodermis 2") 
 
+gderm2 <- FindVariableFeatures(gderm2)
+gderm2 <- ScaleData(gderm2, features = rownames(gderm2@assays$RNA@features))
+gderm2 <- RunPCA(gderm2)
+gderm2 <- FindNeighbors(gderm2, dims = 1:30, reduction = "pca")
+gderm2 <- FindClusters(gderm2, resolution = 0.25)
+#1 cluster
+gderm2 <- RunUMAP(gderm2, reduction="pca", dims=1:30, return.model=TRUE)
+
+#gderm2 <- RunUMAP(gderm2, dims = 1:30, reduction = "integrated.cca")
+
+gderm2@meta.data$seurat_clusters <- as.numeric(as.character(gderm2@meta.data$seurat_clusters))+1
+Idents(gderm2)<- "seurat_clusters"
+gderm2$seurat_clusters
+gderm2@active.ident <- factor(x = gderm2@active.ident, levels = 1)
+gderm2@active.ident
+
+levels(gderm2) <- c("1")
+
+plot7 <- DimPlot(gderm2, reduction = "umap", label = T, cols=c("#CC6699"), alpha=0.5)
+#1 cluster
+
+
+plot8 <- DimPlot(gderm2, reduction = "umap", label=F, order=c("sym", "apo"), group.by = "symstate", cols=c("gray40", "#CC6600"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
+
+plot8b <- DimPlot(gderm2, reduction = "umap", label=T, split.by = "symstate", cols=c("#CC6699"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
+
+#saved as umap_gderm2_plot7plot8_new 9x4
+#umap_gderm2_plot8b_new 8x4 landscape
+```
+
+Gastrodermis 3
+```{r}
+gderm3 <- subset(oculina_named_h, idents = "Gastrodermis 3") 
+
+gderm3 <- FindVariableFeatures(gderm3)
+gderm3 <- ScaleData(gderm3, features = rownames(gderm3@assays$RNA@features))
+gderm3 <- RunPCA(gderm3)
+gderm3 <- FindNeighbors(gderm3, dims = 1:30, reduction = "pca")
+gderm3 <- FindClusters(gderm3, resolution = 0.25)
+#3 clusters
+gderm3 <- RunUMAP(gderm3, reduction="pca", dims=1:30, return.model=TRUE)
+
+#gderm3 <- RunUMAP(gderm3, dims = 1:30, reduction = "integrated.cca")
+
+gderm3@meta.data$seurat_clusters <- as.numeric(as.character(gderm3@meta.data$seurat_clusters))+1
+Idents(gderm3)<- "seurat_clusters"
+gderm3$seurat_clusters
+gderm3@active.ident <- factor(x = gderm3@active.ident, levels = 1:3)
+gderm3@active.ident
+
+levels(gderm3) <- c("1", "2", "3")
+
+plot9 <- DimPlot(gderm3, reduction = "umap", label = T, cols=c("#CC6699", "#33CC99", "#3333FF"), alpha=0.5)
+#3 cluster
+
+
+plot10 <- DimPlot(gderm3, reduction = "umap", label=F, order=c("sym", "apo"), group.by = "symstate", cols=c("gray40", "#CC6600"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
+
+plot10b <- DimPlot(gderm3, reduction = "umap", label=T, split.by = "symstate", cols=c("#CC6699", "#33CC99", "#3333FF"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
+
+#saved as umap_gderm3_plot9plot10_new 9x4
+#umap_gderm3_plot10b_new 8x4 landscape
+
+###### Cluster 2 is entirely sym
+```
+
+```{r}
+gderm3_topfeat <- TopFeatures(object = gderm3[["pca"]], dim = 1, nfeatures = 20, balanced = TRUE)
+gderm3[["umap"]]@cell.embeddings
+##https://hbctraining.github.io/scRNA-seq_online/lessons/08_SC_clustering_quality_control.html
+columns <- c(paste0("PC_", 1:10),
+            "ident",
+            "umap_1", "umap_2")
+pc_data_gd3 <- FetchData(gderm3, 
+                     vars = columns)
+# Adding cluster label to center of cluster on UMAP
+umap_label_gd3 <- FetchData(gderm3, 
+  vars = c("ident", "umap_1", "umap_2"))  %>%
+  group_by(ident) %>%
+  summarise(x=mean(umap_1), y=mean(umap_2))
+# Plotting a UMAP plot for each of the PCs
+
+map(paste0("PC_", 1:10), function(pc){
+        ggplot(pc_data_gd3, 
+               aes(umap_1, umap_2)) +
+                geom_point(aes_string(color=pc), 
+                           alpha = 0.7) +
+                scale_color_gradient(guide = FALSE, 
+                                     low = "grey90", 
+                                     high = "blue")  +
+                geom_text(data=umap_label_gd3, 
+                          aes(label=ident, x, y)) +
+                ggtitle(pc)
+}) %>% 
+        plot_grid(plotlist = .)
+#saved as gderm3_pcplots_umap_091624
+
+DimPlot(gderm3, reduction = "pca", label=F, order=c("sym", "apo"), group.by = "symstate", cols=alpha(c("gray40", "#CC6600"), 0.5))
+
+stdev_gd3 <- Stdev(gderm3, reduction = "pca")
+
+pca_gd3 <- pc_data_gd3
+pca_gd3$sym_state <- gderm3@meta.data$symstate
+summary(aov(PC_1 ~ sym_state, data = pca_gd3)) #1.35e-14 ***
+summary(aov(PC_2 ~ sym_state, data = pca_gd3)) #6.3e-11 ***
+summary(aov(PC_3 ~ sym_state, data = pca_gd3)) #<2e-16 ***
+summary(aov(PC_4 ~ sym_state, data = pca_gd3)) #0.345
+summary(aov(PC_5 ~ sym_state, data = pca_gd3)) #8.66e-12 ***                           
+summary(aov(PC_6 ~ sym_state, data = pca_gd3)) #0.141
+summary(aov(PC_7 ~ sym_state, data = pca_gd3)) #4.97e-13 ***
+summary(aov(PC_8 ~ sym_state, data = pca_gd3)) #0.329
+summary(aov(PC_9 ~ sym_state, data = pca_gd3)) #0.019 *
+summary(aov(PC_10 ~ sym_state, data = pca_gd3)) #0.94
+
+print(gderm3[["pca"]], dims = 1:5, nfeatures = 10)
+
+DefaultAssay(gderm3) <- "RNA"
+gderm3[["RNA"]]$counts<-as.matrix(gderm3[["RNA"]]$counts)+1
+
+#this to look at apo vs sym differentially expressed genes
+gderm3_mark <- FindMarkers(gderm3, ident.1 = "sym", ident.2="apo", group.by = "symstate", test.use="DESeq2", slot = "counts")
+head(gderm3_mark)
+#pretty sure in this case neg lfc means down in sym; pos lfc means up in sym
+gderm3_mark <- rownames_to_column(gderm3_mark, var="gene_symbol")
+
+#look at subcluster marker genes
+gderm3_markers_subclust <- FindAllMarkers(gderm3, 
+                          min.pct = -Inf, 
+                          logfc.threshold = .5, 
+                          only.pos = T, 
+                          test.use = "MAST",
+                          latent.vars = c('percent.mt', 'nFeature_RNA'))
+
+gderm3_markers_subclust
+
+#get apo vs sym differences for subcluster 1 of gderm1
+gderm3_1 <- subset(gderm3, idents="1")
+DefaultAssay(gderm3_1) <- "RNA"
+
+gderm3_1_mark <- FindMarkers(gderm3_1, ident.1 = "sym", ident.2="apo", group.by = "symstate", test.use="DESeq2", slot = "counts")
+gderm3_1_mark <- rownames_to_column(gderm3_1_mark, var="gene_symbol")
+head(gderm3_1_mark)
+
+#get apo vs sym differences for subcluster 2 of gderm1
+gderm3_2 <- subset(gderm3, idents="2")
+DefaultAssay(gderm3_2) <- "RNA"
+#no apos
+
+#for 3
+gderm3_3 <- subset(gderm3, idents="3")
+DefaultAssay(gderm3_3) <- "RNA"
+
+gderm3_3_mark <- FindMarkers(gderm3_3, ident.1 = "sym", ident.2="apo", group.by = "symstate", test.use="DESeq2", slot = "counts")
+gderm3_3_mark <- rownames_to_column(gderm3_3_mark, var="gene_symbol")
+head(gderm3_3_mark)
+
+```
+
+
+
+Gastrodermis 4
+```{r}
+gderm4 <- subset(oculina_named_h, idents = "Gastrodermis 4") 
+
+gderm4 <- FindVariableFeatures(gderm4)
+gderm4 <- ScaleData(gderm4, features = rownames(gderm4@assays$RNA@features))
+gderm4 <- RunPCA(gderm4)
+gderm4 <- FindNeighbors(gderm4, dims = 1:30, reduction = "pca")
+gderm4 <- FindClusters(gderm4, resolution = 0.25)
+#2 clusters
+gderm4 <- RunUMAP(gderm4, reduction="pca", dims=1:30, return.model=TRUE)
+
+#gderm4 <- RunUMAP(gderm4, dims = 1:30, reduction = "integrated.cca")
+
+gderm4@meta.data$seurat_clusters <- as.numeric(as.character(gderm4@meta.data$seurat_clusters))+1
+Idents(gderm4)<- "seurat_clusters"
+gderm4$seurat_clusters
+gderm4@active.ident <- factor(x = gderm4@active.ident, levels = 1:2)
+gderm4@active.ident
+
+levels(gderm4) <- c("1", "2")
+
+plot11 <- DimPlot(gderm4, reduction = "umap", label = T, cols=c("#CC6699", "#33CC99"), alpha=0.5)
+#2 cluster
+
+
+plot12 <- DimPlot(gderm4, reduction = "umap", label=F, order=c("sym", "apo"), group.by = "symstate", cols=c("gray40", "#CC6600"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
+
+plot12b <- DimPlot(gderm4, reduction = "umap", label=T, split.by = "symstate", cols=c("#CC6699", "#33CC99"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
+
+#saved as umap_gderm4_plot11plot12_new 9x4
+#umap_gderm4_plot12b_new 8x4 landscape
+```
 
 Algal-Hosting
 ```{r}
@@ -967,6 +1161,39 @@ head(alga_mark)
 alga_mark <- rownames_to_column(alga_mark, var="gene_symbol")
 ```
 
-What defines algal-hosting from the gastroderm1_subclust 3 (which is almost entirely sym cells)?
+What defines algal-hosting from the gastroderm1_subclust 3 (which is almost entirely sym cells)? and gastroderm3_subclust 2
 
-And, if gastroderm1_subclust 3 isn't algal-hosting, what makes the sym vs apo separation so strong in the gastrodermal cells?
+What differentiates gderm1_3 from the rest of the gderm1 subclusters? What differentiates gderm3_2 from the rest of the gderm3 subclusters? What differentiates gderm1_3 from gderm3_2
+
+And, if gderm1_3 and gderm3_2 aren't algal-hosting, what makes the sym vs apo separation so strong in the gastrodermal cells?
+
+To parse out these questions, the first thing I'm going to do is compare all of the algal-hosting cluster to all of gderm1 then to all of gderm3
+```{r}
+mark_g1_ah <- FindMarkers(oculina_named_h, ident.1 = "Gastrodermis 1", ident.2 = "Algal-Hosting") #one caveat to this code is that i didn't down sample so there are many more cells in gderm1 than in ah
+mark_g1_ah <- rownames_to_column(mark_g1_ah, var="gene_symbol")
+#neg is down in gderm1
+#higher in algal-hosting other than sym reads: tubulin beta chains, s-antigen protein, Transmembrane protease serine 11D, Plasma kallikrein; trypsin; Major facilitator superfamily domain-containing protein, some others
+#no clear patterns in the genes that are upregulated in gderm1 compared to algal-hosting
+#I think what I have to do is match the genes to the gastro vs algal in the spist paper
+#and def compare the gderm1_3 and gderm3_2
+
+# get list of cell identifiers for gderm1_3
+gderm1_3_cells <- rownames(gderm1_3@meta.data)
+# get list of cell identifiers for alga
+alga_cells <- rownames(alga@meta.data)
+mark_g1_3_ah <- FindMarkers(oculina_named_h, ident.1 = gderm1_3_cells, ident.2 = alga_cells) 
+mark_g1_3_ah <- rownames_to_column(mark_g1_3_ah, var="gene_symbol")
+#cathepsins totally higher in gderm1_3_cells compared to alga_cells
+
+# get list of cell identifiers for gderm3_2
+gderm3_2_cells <- rownames(gderm3_2@meta.data)
+mark_g3_2_ah <- FindMarkers(oculina_named_h, ident.1 = gderm3_2_cells, ident.2 = alga_cells) 
+mark_g3_2_ah <- rownames_to_column(mark_g3_2_ah, var="gene_symbol")
+#aplp higher in gderm but cathepsins not higher
+
+# compare gderm1_3_cells and gderm3_2_cells
+mark_g1_3_g3_2 <- FindMarkers(oculina_named_h, ident.1 = gderm1_3_cells, ident.2 = gderm3_2_cells) 
+mark_g1_3_g3_2 <- rownames_to_column(mark_g1_3_g3_2, var="gene_symbol")
+```
+
+
