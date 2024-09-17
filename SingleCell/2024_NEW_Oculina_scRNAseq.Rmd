@@ -1196,4 +1196,309 @@ mark_g1_3_g3_2 <- FindMarkers(oculina_named_h, ident.1 = gderm1_3_cells, ident.2
 mark_g1_3_g3_2 <- rownames_to_column(mark_g1_3_g3_2, var="gene_symbol")
 ```
 
+#########################
+
+####
+Take your list of algal-hosting cells from the sym, because the apo ones don't even express the symbiont gene markers
+
+Read in your cat_host objects (where refgenome was the concatenated genomes but only the host genes)
+```{r}
+F8.host.data.only <- Read10X(data.dir <- "/projectnb/coral/MVI_Oculina/10X_22_ApV2/outs/fastq_path/A3_host_cat_new/outs/filtered_feature_bc_matrix/")
+F1.host.data.only <- Read10X(data.dir <- "/projectnb/coral/MVI_Oculina/10X_22_ApV2/outs/fastq_path/S3_host_cat_new/outs/filtered_feature_bc_matrix/")
+
+# check for duplicated barcodes(column names) within a dataset
+any(duplicated(x = colnames(x = F8.host.data.only)))
+#FALSE
+any(duplicated(x = colnames(x = F1.host.data.only)))
+#FALSE
+
+# Rename columns to avoid trouble when merging data sets
+colnames(x = F8.host.data.only) <- paste('F8', colnames(x = F8.host.data.only), sep = '_')
+colnames(x = F1.host.data.only) <- paste('F1', colnames(x = F1.host.data.only), sep = '_')
+rownames(x = F8.host.data.only) <- gsub("_", "-", rownames(F8.host.data.only))
+head(rownames(F8.host.data.only))
+rownames(x = F1.host.data.only) <- gsub("_", "-", rownames(F1.host.data.only))
+head(rownames(F1.host.data.only))
+
+#rename rownames
+length(gene2gene_symbol$gene_symbol)
+#45867
+length(rownames(F8.host.data.only))
+#43610
+length(rownames(F1.host.data.only))
+#43610
+
+#replace the "merged" from F8_rownames with "" 
+#------->>>>>>> THIS MIGHT CHANGE
+####---->>>> no longer doing this, now instead of the "merged" the isoforms are in the format: "evm.TU.Ap11.1003-evm.TU.Ap11.1005"
+F8.host.data_names.only <- F8.host.data.only
+F8_host_rownames.only <- as.data.frame(rownames(F8.host.data_names.only))
+colnames(F8_host_rownames.only) <-paste("X")
+#F8_host_rownames$X <- gsub("MERGED%3A%20", "", F8_host_rownames$X)
+F8_host_gene2gene_symbol.only <- F8_host_rownames.only %>%
+  left_join(gene2gene_symbol, by=c("X"="gene"))
+F8_host_gene2gene_symbol.only <- 
+    transform(
+        F8_host_gene2gene_symbol.only,
+        gene_symbol =
+            ifelse( is.na(gene_symbol), X, gene_symbol)) %>%
+  mutate(gene_symbol = make.names(gene_symbol, unique = TRUE))
+rownames(x=F8.host.data_names.only) <- F8_host_gene2gene_symbol.only$gene_symbol
+head(rownames(F8.host.data_names.only))
+head(rownames(F8.host.data.only))
+
+#do the same for F1
+F1.host.data_names.only <- F1.host.data.only
+F1_host_rownames.only <- as.data.frame(rownames(F1.host.data_names.only))
+colnames(F1_host_rownames.only) <-paste("X")
+#F1_host_rownames$X <- gsub("MERGED%3A%20", "", F1_host_rownames$X)
+F1_host_gene2gene_symbol.only <- F1_host_rownames.only %>%
+  left_join(gene2gene_symbol, by=c("X"="gene"))
+F1_host_gene2gene_symbol.only <- 
+    transform(
+        F1_host_gene2gene_symbol.only,
+        gene_symbol =
+            ifelse( is.na(gene_symbol), X, gene_symbol)) %>%
+  mutate(gene_symbol = make.names(gene_symbol, unique = TRUE))
+rownames(x=F1.host.data_names.only) <- F1_host_gene2gene_symbol.only$gene_symbol
+head(rownames(F1.host.data_names.only))
+head(rownames(F1.host.data.only))
+
+### Initialize the Seurat object with the raw, non-normalized data
+
+F8.only <- CreateSeuratObject(counts = F8.host.data_names.only, 
+                             min.cells = 3, 
+                             min.features = 200, 
+                             project = "F8_host")
+F1.only <- CreateSeuratObject(counts = F1.host.data_names.only, 
+                             min.cells = 3, 
+                             min.features = 200, 
+                             project = "F1_host")
+
+### add metadata to objects
+
+# add individual
+F8.only[["individual"]] <- "A_2F8"
+F8.only@meta.data$individual <- as.factor(F8.only@meta.data$individual)
+F1.only[["individual"]] <- "S_2F1"
+F1.only@meta.data$individual <- as.factor(F1.only@meta.data$individual)
+
+# add symstate
+F8.only[["symstate"]] <- "apo"
+F8.only@meta.data$symstate <- as.factor(F8.only@meta.data$symstate)
+F1.only[["symstate"]] <- "sym"
+F1.only@meta.data$symstate <- as.factor(F1.only@meta.data$symstate)
+
+# add genet
+F8.only[["genet"]] <- "F"
+F8.only@meta.data$genet <- as.factor(F8.only@meta.data$genet)
+F1.only[["genet"]] <- "F"
+F1.only@meta.data$genet <- as.factor(F1.only@meta.data$genet)
+
+str(F8.only@meta.data)
+str(F1.only@meta.data)
+
+F8.only
+#24706 features across 3813 samples within 1 assay 
+#Active assay: RNA (24706 features, 0 variable features)
+
+F1.only
+#24771 features across 3129 samples within 1 assay 
+#Active assay: RNA (24771 features, 0 variable features)
+
+F1_host_cell_ids <- rownames(F1.only@meta.data)
+sym_host_intersect <- intersect(F1_host_cell_ids, alga_cells)
+#9 of them, so there are 45 that get lost
+
+F8_host_cell_ids <- rownames(F8.only@meta.data)
+sym_host_intersect_apo <- intersect(F8_host_cell_ids, alga_cells)
+#14 of them (which is all of them)
+```
+
+```{r}
+obj.list.only <- list(F8.only, F1.only)
+
+rownames(obj.list.only[[1]]) %>% as.data.frame() %>% View()
+
+for (i in 1:length(obj.list.only)) {
+  obj.list.only[[i]] <- PercentageFeatureSet(obj.list.only[[i]], pattern = "^MT-", col.name = 'percent.mt')
+  obj.list.only[[i]][["per.mito.bin"]] <- ifelse(obj.list.only[[i]][["percent.mt"]] > 10, "> 10%", ifelse(obj.list.only[[i]][["percent.mt"]] > 5, "5%-10%", ifelse(obj.list.only[[i]][["percent.mt"]] > 2.5, "2.5%-5%", "< 2.5%")))
+}
+
+plts_qc.only <- lapply(obj.list.only, function(x) VlnPlot(x, 
+                                             features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), 
+                                             group.by = "individual",
+                                             pt.size = .25,
+                                             ncol = 3))
+
+patchwork::wrap_plots(plts_qc.only, ncol = 1) 
+```
+
+```{r}
+F8_new.only <- obj.list.only[[1]]
+F1_new.only <- obj.list.only[[2]]
+obj.list_merge.only <- merge(F8_new.only, F1_new.only)
+obj.list_merge.only
+
+#following the "Perform analysis without integration" first:
+# run standard anlaysis workflow
+merge.only <- NormalizeData(obj.list_merge.only)
+merge.only <- FindVariableFeatures(merge.only)
+merge.only <- ScaleData(merge.only, features = rownames(obj.list_merge.only@assays$RNA@features))
+merge.only <- RunPCA(merge.only)
+merge.only <- FindNeighbors(merge.only, dims = 1:30, reduction = "pca")
+merge.only <- FindClusters(merge.only, resolution = 2, cluster.name = "unintegrated_clusters")
+#42 is way too many clusters but that is unintegrated and with a high res
+
+merge.only <- RunUMAP(merge.only, dims = 1:30, reduction = "pca", reduction.name = "umap.unintegrated")
+DimPlot(merge.only, reduction = "umap.unintegrated", group.by = c("individual", "seurat_clusters"))
+#the individuals do overlap really well
+
+#"Perform integration"
+merge.only <- IntegrateLayers(object = merge.only, method = CCAIntegration, orig.reduction = "pca", new.reduction = "integrated.cca",
+    verbose = TRUE)
+# re-join layers after integration
+merge.only[["RNA"]] <- JoinLayers(merge.only[["RNA"]])
+
+merge.only <- FindNeighbors(merge.only, reduction = "integrated.cca", dims = 1:30)
+merge.only <- FindClusters(merge.only, resolution = 0.5)
+#28 clusters at res of 0.5
+
+merge.only <- RunUMAP(merge.only, dims = 1:30, reduction = "integrated.cca")
+
+# Visualization
+plt1merge.only <- DimPlot(merge.only, reduction = "umap", label = T, shuffle=TRUE)
+plt2merge.only <- DimPlot(merge.only, reduction = "umap", group.by = "individual", shuffle=TRUE)
+plt3merge.only <- DimPlot(merge.only, reduction = "umap", group.by = "symstate", shuffle=TRUE)
+
+sym_cell_feat_plot <- DimPlot(merge.only, reduction = "umap", cells.highlight = sym_host_intersect, cols.highlight=c("black"))
+
+sym_cell_feat_plot_apo <- DimPlot(merge.only, reduction = "umap", cells.highlight = sym_host_intersect_apo, cols.highlight=c("black"))
+```
+
+Okay that didn't work as well as I'd hoped, I think the cells with high amounts of symbiont reads are getting tossed, so I'm going to try to identify these cells in just a host genome, host gene background
+
+
+```{r}
+F8.host.host.data <- Read10X(data.dir <- "/projectnb/coral/MVI_Oculina/10X_22_ApV2/outs/fastq_path/A3_host_only_new/outs/filtered_feature_bc_matrix/")
+F1.host.host.data <- Read10X(data.dir <- "/projectnb/coral/MVI_Oculina/10X_22_ApV2/outs/fastq_path/S3_host_only_new/outs/filtered_feature_bc_matrix/")
+
+# check for duplicated barcodes(column names) within a dataset
+any(duplicated(x = colnames(x = F8.host.host.data)))
+#FALSE
+any(duplicated(x = colnames(x = F1.host.host.data)))
+#FALSE
+
+# Rename columns to avoid trouble when merging data sets
+colnames(x = F8.host.host.data) <- paste('F8', colnames(x = F8.host.host.data), sep = '_')
+colnames(x = F1.host.host.data) <- paste('F1', colnames(x = F1.host.host.data), sep = '_')
+rownames(x = F8.host.host.data) <- gsub("_", "-", rownames(F8.host.host.data))
+head(rownames(F8.host.host.data))
+rownames(x = F1.host.host.data) <- gsub("_", "-", rownames(F1.host.host.data))
+head(rownames(F1.host.data.data))
+
+#rename rownames
+length(gene2gene_symbol$gene_symbol)
+#45867
+length(rownames(F8.host.host.data))
+#43610
+length(rownames(F1.host.host.data))
+#43610
+
+#replace the "merged" from F8_rownames with "" 
+#------->>>>>>> THIS MIGHT CHANGE
+####---->>>> no longer doing this, now instead of the "merged" the isoforms are in the format: "evm.TU.Ap11.1003-evm.TU.Ap11.1005"
+F8.host.host.data_names <- F8.host.host.data
+F8_host.host_rownames <- as.data.frame(rownames(F8.host.host.data_names))
+colnames(F8_host.host_rownames) <-paste("X")
+#F8_host_rownames$X <- gsub("MERGED%3A%20", "", F8_host_rownames$X)
+F8_host.host_gene2gene_symbol <- F8_host.host_rownames %>%
+  left_join(gene2gene_symbol, by=c("X"="gene"))
+F8_host.host_gene2gene_symbol <- 
+    transform(
+        F8_host.host_gene2gene_symbol,
+        gene_symbol =
+            ifelse( is.na(gene_symbol), X, gene_symbol)) %>%
+  mutate(gene_symbol = make.names(gene_symbol, unique = TRUE))
+rownames(x=F8.host.host.data_names) <- F8_host.host_gene2gene_symbol$gene_symbol
+head(rownames(F8.host.host.data_names))
+head(rownames(F8.host.host.data))
+
+#do the same for F1
+F1.host.host.data_names <- F1.host.host.data
+F1_host.host_rownames <- as.data.frame(rownames(F1.host.host.data_names))
+colnames(F1_host.host_rownames) <-paste("X")
+#F1_host_rownames$X <- gsub("MERGED%3A%20", "", F1_host_rownames$X)
+F1_host.host_gene2gene_symbol <- F1_host.host_rownames %>%
+  left_join(gene2gene_symbol, by=c("X"="gene"))
+F1_host.host_gene2gene_symbol <- 
+    transform(
+        F1_host.host_gene2gene_symbol,
+        gene_symbol =
+            ifelse( is.na(gene_symbol), X, gene_symbol)) %>%
+  mutate(gene_symbol = make.names(gene_symbol, unique = TRUE))
+rownames(x=F1.host.host.data_names) <- F1_host.host_gene2gene_symbol$gene_symbol
+head(rownames(F1.host.host.data_names))
+head(rownames(F1.host.host.data))
+
+### Initialize the Seurat object with the raw, non-normalized data
+
+F8.final <- CreateSeuratObject(counts = F8.host.host.data_names, 
+                             min.cells = 3, 
+                             min.features = 200, 
+                             project = "F8_host")
+F1.final <- CreateSeuratObject(counts = F1.host.host.data_names, 
+                             min.cells = 3, 
+                             min.features = 200, 
+                             project = "F1_host")
+
+### add metadata to objects
+
+# add individual
+F8.final[["individual"]] <- "A_2F8"
+F8.final@meta.data$individual <- as.factor(F8.final@meta.data$individual)
+F1.final[["individual"]] <- "S_2F1"
+F1.final@meta.data$individual <- as.factor(F1.final@meta.data$individual)
+
+# add symstate
+F8.final[["symstate"]] <- "apo"
+F8.final@meta.data$symstate <- as.factor(F8.final@meta.data$symstate)
+F1.final[["symstate"]] <- "sym"
+F1.final@meta.data$symstate <- as.factor(F1.final@meta.data$symstate)
+
+# add genet
+F8.final[["genet"]] <- "F"
+F8.final@meta.data$genet <- as.factor(F8.final@meta.data$genet)
+F1.final[["genet"]] <- "F"
+F1.final@meta.data$genet <- as.factor(F1.final@meta.data$genet)
+
+str(F8.final@meta.data)
+str(F1.final@meta.data)
+
+F8.final
+#24702 features across 3811 samples within 1 assay
+#Active assay: RNA (24702 features, 0 variable features)
+
+F1.final
+#24767 features across 3135 samples within 1 assay 
+#Active assay: RNA (24767 features, 0 variable features)
+
+F1_final_cell_ids <- rownames(F1.final@meta.data)
+sym_host_intersect_final <- intersect(F1_final_cell_ids, alga_cells)
+#9 of them, so there are 45 that get lost
+
+F8_final_cell_ids <- rownames(F8.final@meta.data)
+sym_host_intersect_apo_final <- intersect(F8_final_cell_ids, alga_cells)
+#14 of them (which is all of them)
+```
+
+Okay well darn that didn't work either
+
+I think I have to keep the cat-cat situation to identify those algal cells, but then do the umap stuff and variable gene stuff just with the Astrangia host genes and no sym genes
+
+Define features to scale for the real dealio
+```{r}
+features_to_scale = rownames(obj.list_merge.only@assays$RNA@features)
+```
+
 
