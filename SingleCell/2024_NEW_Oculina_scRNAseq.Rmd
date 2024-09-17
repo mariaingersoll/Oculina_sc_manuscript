@@ -246,11 +246,13 @@ obj.list_merge
 # run standard anlaysis workflow
 merge <- NormalizeData(obj.list_merge)
 merge <- FindVariableFeatures(merge)
-merge <- ScaleData(merge, features = rownames(obj.list_merge@assays$RNA@features))
+#merge <- ScaleData(merge, features = rownames(obj.list_merge@assays$RNA@features))
+merge<- ScaleData(merge, features = features_to_scale)
 merge <- RunPCA(merge)
 merge <- FindNeighbors(merge, dims = 1:30, reduction = "pca")
 merge <- FindClusters(merge, resolution = 2, cluster.name = "unintegrated_clusters")
 #41 clusters; unintegrated and with a high res
+#now 40 clusters
 
 merge <- RunUMAP(merge, dims = 1:30, reduction = "pca", reduction.name = "umap.unintegrated")
 DimPlot(merge, reduction = "umap.unintegrated", group.by = c("individual", "seurat_clusters"))
@@ -267,6 +269,8 @@ merge <- FindClusters(merge, resolution = 0.5)
 #28 clusters at res of 0.5
 #22 clusters at res of 0.25
 
+#now 27
+
 merge <- RunUMAP(merge, dims = 1:30, reduction = "integrated.cca")
 
 # Visualization
@@ -274,8 +278,12 @@ plt1merge <- DimPlot(merge, reduction = "umap", label = T, shuffle=TRUE)
 plt2merge <- DimPlot(merge, reduction = "umap", group.by = "individual", shuffle=TRUE)
 plt3merge <- DimPlot(merge, reduction = "umap", group.by = "symstate", shuffle=TRUE)
 #saved plt1_plt3_merge_091124 as landscape 12x6
-
+#new saved as plt1_plt3_merge_091624
 #keeping with res of 0.5 for now, can merge clusters later
+
+sym_cell_feat_plot_new <- DimPlot(merge, reduction = "umap", cells.highlight = alga_cells, cols.highlight=c("black"))
+
+#saved as sym_cells_umap_091624 as 6x6
 ```
 
 ```{r}
@@ -283,16 +291,16 @@ DefaultAssay(merge) <- "RNA"
 merge@meta.data$seurat_clusters <- as.numeric(as.character(merge@meta.data$seurat_clusters))+1
 Idents(merge)<- "seurat_clusters"
 merge$seurat_clusters
-merge@active.ident <- factor(x = merge@active.ident, levels = 1:28)
+merge@active.ident <- factor(x = merge@active.ident, levels = 1:27)
 merge@active.ident
 
-saveRDS(merge, paste0(proj_name, '_clean_091124.rds'))
+saveRDS(merge, paste0(proj_name, '_clean_091624.rds'))
 merge <- readRDS(file.choose())
 ```
 
 One method for finding marker genes, there are multiple ways of doing this
 ```{r}
-markers <- FindAllMarkers(merge, 
+markers <- FindAllMarkers(merge,
                           min.pct = -Inf, 
                           logfc.threshold = .5, 
                           only.pos = T, 
