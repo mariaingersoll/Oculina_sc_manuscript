@@ -299,13 +299,16 @@ sym_feat_plot3 <- FeaturePlot(merge, features=c("Sym.111787.c1.g1.i6"), split.by
 counts <- GetAssayData(merge, assay = "RNA")
 length(rownames(counts))
 #31026
-counts_names <- rownames(counts)
-nrow(gene)
+tail(counts)
+counts_lim <- counts[1:24716,]
+#counts_names <- rownames(counts)
+#nrow(gene)
 #45867
-counts_names <- counts_names[1:24716]
+#counts_names <- counts_names[1:24716]
 #counts_names_df <- as.data.frame(counts_names)
 
-ultimate_merge <- subset(merge, features = rownames(counts_names))
+ultimate_merge <- subset(merge, features = rownames(counts_lim))
+tail(rownames(ultimate_merge@assays$RNA))
 ```
 
 ```{r}
@@ -346,7 +349,7 @@ col_names <- c("p_val", "avg_log2FC", "pct.1", "pct.2", "p_val_adj", "cluster", 
 colnames(markers_fullnames) <- col_names
 markers_fullnames <- markers_fullnames %>%
   left_join(seq2iso2gene) %>%
-  write_csv('./files/Oculina_clean_markers_091724_logFC.5.csv')
+  write_csv('./files/Oculina_ultimate_markers_091824_logFC.5.csv')
 
 markers_fullnames <- read.csv(file.choose())
 head(markers_fullnames)
