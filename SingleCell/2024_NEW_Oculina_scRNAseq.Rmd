@@ -242,6 +242,7 @@ obj.list_merge
 #Active assay: RNA (31026 features, 0 variable features)
 # 2 layers present: counts.F8_host, counts.F1_host
 
+
 #following the "Perform analysis without integration" first:
 # run standard anlaysis workflow
 merge <- NormalizeData(obj.list_merge)
@@ -282,25 +283,47 @@ plt3merge <- DimPlot(merge, reduction = "umap", group.by = "symstate", shuffle=T
 #keeping with res of 0.5 for now, can merge clusters later
 
 sym_cell_feat_plot_new <- DimPlot(merge, reduction = "umap", cells.highlight = alga_cells, cols.highlight=c("black"))
-
 #saved as sym_cells_umap_091624 as 6x6
+
+sym_feat_plot1 <- FeaturePlot(merge, features=c("Sym.152125.c5.g2.i4"), split.by = "symstate", order = TRUE, reduction="umap") + theme(legend.position = c(0.98,0.98))
+sym_feat_plot2 <- FeaturePlot(merge, features=c("Sym.146798.c0.g2.i7"), split.by = "symstate", order = TRUE, reduction="umap") + theme(legend.position = c(0.98,0.98))
+sym_feat_plot3 <- FeaturePlot(merge, features=c("Sym.111787.c1.g1.i6"), split.by = "symstate", order = TRUE, reduction="umap") + theme(legend.position = c(0.98,0.98))
+
+#apo cells assigned to "algal-hosting" don't even express symbiont genes
+#sym cells assigned to "algal-hosting" but outside of gderm cluster either don't express symbiont reads or express them at very low conc
+#so those 45 sym cells identified in algal-hosting cell from before and now in gderm are the actual algal-hosting cells
+
+
+
+################ trying to now remove the sym genes
+counts <- GetAssayData(merge, assay = "RNA")
+length(rownames(counts))
+#31026
+counts_names <- rownames(counts)
+nrow(gene)
+#45867
+counts_names <- counts_names[1:24716]
+#counts_names_df <- as.data.frame(counts_names)
+
+ultimate_merge <- subset(merge, features = rownames(counts_names))
 ```
 
 ```{r}
-DefaultAssay(merge) <- "RNA"
-merge@meta.data$seurat_clusters <- as.numeric(as.character(merge@meta.data$seurat_clusters))+1
-Idents(merge)<- "seurat_clusters"
-merge$seurat_clusters
-merge@active.ident <- factor(x = merge@active.ident, levels = 1:27)
-merge@active.ident
+DefaultAssay(ultimate_merge) <- "RNA"
+ultimate_merge@meta.data$seurat_clusters <- as.numeric(as.character(ultimate_merge@meta.data$seurat_clusters))+1
+Idents(ultimate_merge)<- "seurat_clusters"
+ultimate_merge$seurat_clusters
+ultimate_merge@active.ident <- factor(x = ultimate_merge@active.ident, levels = 1:27)
+ultimate_merge@active.ident
 
-saveRDS(merge, paste0(proj_name, '_clean_091624.rds'))
-merge <- readRDS(file.choose())
+saveRDS(ultimate_merge, paste0(proj_name, '_ultimate_091724.rds'))
+ultimate_merge <- readRDS(file.choose())
 ```
 
 One method for finding marker genes, there are multiple ways of doing this
 ```{r}
-markers <- FindAllMarkers(merge,
+###
+markers <- FindAllMarkers(ultimate_merge,
                           min.pct = -Inf, 
                           logfc.threshold = .5, 
                           only.pos = T, 
@@ -313,7 +336,7 @@ markers <- FindAllMarkers(merge,
 markers <- markers %>%
   filter(avg_log2FC > 0)
 nrow(markers)
-#29018
+#new 28272
 
 markers_fullnames <- markers
 rownames(markers_fullnames) =NULL
@@ -323,7 +346,7 @@ col_names <- c("p_val", "avg_log2FC", "pct.1", "pct.2", "p_val_adj", "cluster", 
 colnames(markers_fullnames) <- col_names
 markers_fullnames <- markers_fullnames %>%
   left_join(seq2iso2gene) %>%
-  write_csv('./files/Oculina_clean_markers_091124_logFC.5.csv')
+  write_csv('./files/Oculina_clean_markers_091724_logFC.5.csv')
 
 markers_fullnames <- read.csv(file.choose())
 head(markers_fullnames)
@@ -333,365 +356,366 @@ markers_strong <- markers_fullnames %>%
   filter(pct.1 > 0.1)
 
 nrow(markers_strong)
-#8546
-write_csv(markers_strong, "./files/SuppDataset_oculina_markers_strong_091124.csv")
+#new 7089
+write_csv(markers_strong, "./files/SuppDataset_oculina_markers_strong_091724.csv")
 
-#strong symbiont genes really only in cluster 21, a few others scattered
+#from the inclusion of the symbiont genome/gtf, strong symbiont genes really only in cluster 21, a few others scattered
 ```
 
 ###Now work on identifying your cell types
 
 make "oculina" to manipulate around with and keep "merge" unmanipulated
 ```{r}
-oculina <- merge
-merge@meta.data
-merge@active.ident
-head(merge)
+#oculina <- merge 
+# oculina is the one that has the cluster 21 with the algal-hosting cells ONLY
+#merge@meta.data
+#merge@active.ident
+#head(merge)
+
+#oculina_new is the one that was PCA-ed and UMAP-ed without the symbiont reads
+oculina_new <- merge
 ```
 
 First, look at symbiont genes
 ```{r}
-Sym.1 <- c("Sym.205261.c0.g1.i1") #marker for 21, sym only
-Sym.2 <- c("Sym.84646.c0.g2.i1") #marker for 1 but in a lot of cells and apo and sym; almost certainly not actually a sym read but a mismatch
-Sym.3 <- c("Sym.84646.c0.g2.i1") #same as sym.2
-VlnPlot(object =oculina, features = Sym.3, pt.size= 0,combine = F,assay = "RNA", split.by = "symstate") 
+#Sym.1 <- c("Sym.205261.c0.g1.i1") #marker for 21, sym only
+#Sym.2 <- c("Sym.84646.c0.g2.i1") #marker for 1 but in a lot of cells and apo and sym; almost certainly not actually a sym read but a mismatch
+#Sym.3 <- c("Sym.84646.c0.g2.i1") #same as sym.2
+#VlnPlot(object =oculina, features = Sym.3, pt.size= 0,combine = F,assay = "RNA", split.by = "symstate") 
 ```
 
 Use genes of interest identified in previous cnidarian datasets
 ```{r}
 #TF highly expressed in spist cnidocytes
-pax6 <- c("PAX6", "PAX6.1", "PAX6.2") #PAX6.2 marker for 4, 9, 14
-six1 <- c("SIX1B", "SIX1B.1") #SIX1B marker for 12
+pax6 <- c("PAX6", "PAX6.1", "PAX6.2") #PAX6.2 marker for 3, 10, 14
+six1 <- c("SIX1B", "SIX1B.1") #SIX1B marker for 13
 six2 <- c("SO") #ns
 
 #TF highly expressed in spist gastrodermis etc
 foxc2 <- c("FXC2B") #spist gastro muscle; ns
-deaf1 <- c("DEAF1") #spist gastro muscle; --> marker for 2, 3
-erg <- c("ERG") #all spist gastros, --> marker for 2 but high in lots of cells
-fli1 <- c("FLII") #same spist as erg; marker for 2
-etv6 <- c("ETV6","ETV6.1") #gastro algal hosting in spist, --> 6.1 is marker for 2
+deaf1 <- c("DEAF1") #spist gastro muscle; --> marker for 2, 4
+erg <- c("ERG") #all spist gastros, --> marker for 1 and 4 but high in lots of cells
+fli1 <- c("FLII") #same spist as erg; ns
+etv6 <- c("ETV6","ETV6.1") #gastro algal hosting in spist, --> 6.1 is marker for 4
 elf2 <- c("ELF2") #gastro algal hosting in spist, ns
-elf4 <- c("ELF4", "ELF4.1", "ETS1A.3") #gastro algal hosting in spist --> marker for 2, 3, 12, 17; ELF4.1 also in some others (4, 7, 14, 20)
-spdef <- c("SPDEF") #gastro algal hosting in spist, marker for 2, 9, 12 (also in 13, 22)
+elf4 <- c("ELF4", "ELF4.1", "ETS1A.3") #gastro algal hosting in spist --> marker for 4; 2, 4, 13, 17; 13, 17; ELF4.1 also in some others (3, 7, 14, 19)
+spdef <- c("SPDEF") #gastro algal hosting in spist, marker for 4, 10, 13 (also in 12, 20)
 usf2 <- c("USF2", "USF2.1") #in gastrodermis in spist, ns
-otx1 <-c("OTX1", "OTX1B", "OTX1B.1") #gastro in spist, markers for 1 and 2
+otx1 <-c("OTX1", "OTX1B", "OTX1B.1") #gastro in spist, markers for 1 and 4
 six4_6 <- c("SIX4", "SIX6") #ns
 
 #TFs for neuron
-gata2 <- c("GATA2") #marker for 26
-pax7 <- c("PAX7", "PAX7.1", "PAX7.2") #markers for 4, 9, 14, highest in 14
+gata2 <- c("GATA2") #marker for 17 and 26 (especially 26)
+pax7 <- c("PAX7", "PAX7.1", "PAX7.2") #markers for 3, 10, 14, highest in 14
 asc <- c("ASCC1", "ASCC2", "ASCC3") #ns
-pou4 <- c("PO4F3") #marker for 12, 20, 27, 28; highest in 27 and 28
-islet <- c("ICA69") #ns but kinda in 28
-tbx20 <- c("TBX20.2") #marker for 12, 17, 22; highest in 17
+pou4 <- c("PO4F3") #marker for 13, 19, 25, 27; highest in 25 and 27
+islet <- c("ICA69") #ns
+tbx20 <- c("TBX20.2") #marker for 13, 17, 20; highest in 17
 
 #TFs for Immune
 irf1 <- c("IRF1") #marker gene for 15
 irf2 <- c("IRF2", "IRF2.1", "IRF2.2", "IRF2.3") #markers 15
-nfat5 <- c("NFAT5.4") #marker gene for 3 but high in everything
+nfat5 <- c("NFAT5.4") #marker gene for 2 but high in everything
 atf3 <- c("ATF3") #marker for 15
-atf5 <- c("ATF5") #marker for 10 and 22 but in all cells
+atf5 <- c("ATF5") #marker for 11 and 20 but in all cells
 
 #TFs for spist epidermis 
-pax2 <- c("PAX2", "PAX2A", "PAX2A.1", "PAX2A.2") #markers for 26 (pax2) and 28 (pax2a) but kinda weak
+pax2 <- c("PAX2", "PAX2A", "PAX2A.1", "PAX2A.2") #markers for 25 (pax2) and 26 (pax2a) but very weak
 pax8 <- c("PAX8", "PAX8.1", "PAX8.2", "PAX8.3", "PAX8.4", "PAX8.5", "PAX8.6", "PAX8.7") #ns
 bach <- c("BACH", "BACH.1") #ns
-nfe2 <- c("NF2L1") #marker for 2 but high in everything
+nfe2 <- c("NF2L1") #marker for 4 but high in everything
 
 #TFs for spist gland
-rfx <- c("RFX6", "RFX4") #marker for 10, 18 (RFX6) and 16, 22 (RFX4)
+rfx <- c("RFX6", "RFX4") #marker for 11, 18 (RFX6) and 16, 20 (RFX4)
 
 #TFs for calicoblast
-dnajc21 <- c("DJC21") #this is spist zf-met.like DNAJC21; marker for 25
-prdm9 <- c("PRDM6.7") #marker for 14 and 20, PRDM9 in description, kinda weak
-myb <- c("evm.TU.Ap3.186") #myb-like, marker for 1, 3, 25; mostly 25
-ncor <- c("NCOR1", "NCOR1.1") #markers for 3 but also NCOR1 in 25
+dnajc21 <- c("DJC21") #this is spist zf-met.like DNAJC21; highest in 23
+prdm9 <- c("PRDM6.7") #marker for 14 and 19, PRDM9 in description, kinda weak
+myb <- c("evm.TU.Ap3.186") #myb-like, marker for 1, 2, 23; mostly 23
+ncor <- c("NCOR1", "NCOR1.1") #markers for 2 but also NCOR1 in 23
 ssrp1 <- c("SSRP1") #marker for 7
-dmrt <- c("DMRTD", "DMTA2.3") #2.3 is marker for 2, 4, 17 but all weak
+dmrt <- c("DMRTD", "DMTA2.3") #2.3 is marker for 3 and 4 but all weak
 csd <- c("CSD") #ns
-atf <- c("ZHANG", "ZHANG.1", "CREM") #ZHANGs markers for 3 but weak, crem ns
+atf <- c("ZHANG", "ZHANG.1", "CREM") #ZHANGs markers for 2 but weak, crem ns
 dbp <- c("DBP", "DBP.2", "HLF.2", "HLF.3", "TEF") #dbps markers for 5; hlf markers for 5 and 1; tef ns
-atf2 <- c("ATF2") #ATF2 marker for 28 but weak
-# forkhead (fox) tf marker for many cells including 25
+atf2 <- c("ATF2") #ATF2 marker for 25 but weak
+# forkhead (fox) tf marker for many cells including 23, 25, 27
 
 ###random genes of interest from spist paper
 #cnidocyte (minicollagen but we don't have that)
-tal2 <- c("TAL2.4") #tachylectins or galactosamine binding lectins, marker for 8, 16; mostly 8
+tal2 <- c("TAL2.4") #tachylectins or galactosamine binding lectins, marker for 8, 16; mostly 8, a tiny bit 21
 
 #immune
-alps <- c("ALPS", "ALPS.1") #Anti-lipopolysaccharide factor, marker for 15, immune cell linked in spistillata; also 2
-ikka <- c("IKKA") #marker for 7, 10, 18
-ikbp1 <- c("IKBP1") #marker for 25
-ilf2 <- c("ILF2") #marker for 1 and 25
-hsp70 <- c("HSP71.1", "HSP71", "HSP7C.1") #marker for 15 (first), and 2 (second and third, also in all)
-hsp90 <- c("H90A1", "HSP97") #first is marker for 1 and 2 but in all cells; second is marker for 15 and 1 also in a lot of cells
-alphaA <- c("L2EFL.1") #alpha-crystallin A, marker for 10 and 13
+alps <- c("ALPS", "ALPS.1") #Anti-lipopolysaccharide factor, marker for 15, immune cell linked in spistillata; also 4
+ikka <- c("IKKA") #marker for 7, 11, 18
+ikbp1 <- c("IKBP1") #marker for 23
+ilf2 <- c("ILF2") #marker for 1 and 23
+hsp70 <- c("HSP71.1", "HSP71", "HSP7C.1") #marker for 15 (first), and 4 (second and third, also in all)
+hsp90 <- c("H90A1", "HSP97") #first is marker for 1 and 4 but in all cells; second is marker for 15 and 1 also in a lot of cells
+alphaA <- c("L2EFL.1") #alpha-crystallin A, marker for 11 and 12
 alphaB <- c("CRYAB") #alpha-crystallin B, marker for 15
-cathepsin <- c("CATL.1", "CATL.3", "CATB.1") #lots of cathepsin marker genes in 1, 2, 3, and 15
+cathepsin <- c("CATL.1", "CATL.3", "CATB.1") #lots of cathepsin marker genes in 1, 4, and 15
 bcl2 <- c( "BCL2") #bcl2 is marker for 15 and others; in lots of cells
 #other random immune genes
 nfkb1 <- c("NFKB1", "NFKB1.1") #ns
 my881 <- c("MY88A") #ns
 bcl3 <- c("BCL3", "BCL3.1") #ns
 lbp <- c("LBP", "LBP.1", "LBP.2", "LBP.3") # lbp.3 and lbp.1 markers for 15
-prosaposin <- c("SAP") # marker for 1, 2
+prosaposin <- c("SAP") # marker for 1, 4
 endop <- c("ENDD1", "ENDD1.1", "evm.TU.Ap10.801") #endonuclease domain containing protein; idk if TF; last is marker for 15
 cd36 <- c("CD36", "CD36.1", "CD36.2") #ns
 sting <- c("STING", "STING.1", "STING.2", "STING.3", "STING.4", "STING.5") #ns
 ifih1 <- c("IFIH1", "IFIH1.1", "IFIH1.2") #ns interferon-induced helicase c domain-containing protein
-dock <- c("DOCK1", "DOCK3", "DOCK7", "DOCK9") #dedicator of cytokinesis; markers for 3
-gbp6 <- c("GBP6.6", "GBP6", "GBP6.2") #marker for 15, guanylate binding protein 6; NICE (also markers for 2 and 10)
+dock <- c("DOCK1", "DOCK3", "DOCK7", "DOCK9") #dedicator of cytokinesis; markers for 2
+gbp6 <- c("GBP6.6", "GBP6", "GBP6.2") #marker for 15, guanylate binding protein 6; NICE (also markers for 4 and 11)
 rab43 <- c("RAB43", "RAB43.1") #ns
 bag <- c("BAG1", "BAG4", "BAG.2", "BAG.1") #BAG family molecular chaperone regulator 1 and 4 (ns) and IgA FC receptor; bag.1 and bag.2 are markers for 6
-apoptosis <- c("BFAR", "BAX", "SIVA", "AR1", "CFLAR") #apoptosis regulators; markers for 2/3/12/17 (AR1) - mostly 2
+apoptosis <- c("BFAR", "BAX", "SIVA", "AR1", "CFLAR") #apoptosis regulators; markers for 2/4/13/17 (AR1) - mostly 4
 casp3 <- c("CASP3.2") #caspase3 marker for 15
-mvp <- c("MVP", "MVP.1", "MVP.2") #major vault protein; MVP is in a lot of things; MVP marker for 56 and high in others
+mvp <- c("MVP", "MVP.1", "MVP.2") #major vault protein; MVP is in a lot of things; MVP marker for 15 and high in others
 ttc28 <- c("TTC28.15", "TTC28.32", "TTC28.26", "TTC28.240", "TTC28.118", "TTC28.152") #markers for many including 15; Tetratricopeptide repeat protein 28 
 
 #gastro
-tropomyosin <- c("TPM2", "TPM2.1", "TPM.1", "TPM.2", "TPM.6") #markers for many (1,2,4,5,6,9,10,11,13,14,15)
-apoB <- c("APOB","APOB.1") #apolipoprotein markers for 1, 2, 3; also in 7
-aplp <- c("APLP") #apolipophorin marker for 1, 2, 3; also in 7, 11, 12, 21, 28 a bit
-galk <- c("GALK1", "GALK2") #galactokinase; markers for 1 and 3
-carb <- c("CAH2", "CAH2.2", "CAH2.5", "CAH2.6") #carbonic anhydrase; high exp in algal-hosting cells in spist; markers for 1, 4, 6 (many), 9, 14, 16, 19
+tropomyosin <- c("TPM2", "TPM2.1", "TPM.1", "TPM.2", "TPM.6") #markers for many (1,3,4,5,6,9,10,11,12,14,15)
+apoB <- c("APOB","APOB.1") #apolipoprotein markers for 1, 2, 4; also in 7
+aplp <- c("APLP") #apolipophorin marker for 1, 2, 4; also in 7, 13, 17, 25 a bit
+galk <- c("GALK1", "GALK2") #galactokinase; marker for 1
+carb <- c("CAH2", "CAH2.2", "CAH2.5", "CAH2.6") #carbonic anhydrase; high exp in algal-hosting cells in spist; markers for 1, 3, 6 (many), 10, 14, 16, 24
 npc2 <- c("NPC2", "NPC2.5", "NPC2.6", "NPC2.7") #markers for 1 and 15
 
-#others to note some of which are markers: granulins (1, 2, 3), S2611 (transporter, 1, 3), lysosome associated things (LAMP1 in 1, 2, 15), GRP78 (glucose-reg, 1), PLCL.5 and .1 (2, 3, 18), glutamic acid-rich proteins in 1, 4, 5, 7, 9, 14, 15; CMLO2.3 and NAT8L (acetyltransf., 2, 3; 2, 3); acid phosphatase (1, 2, 3, 23)
+#others to note some of which are markers: granulins (1, 2, 4), S2611 (transporter, 1, 2), lysosome associated things (LAMP1 in 1, 4, 15), GRP78 (glucose-reg, 1), PLCL.5 and .1 (1, 2, 4, 18), glutamic acid-rich proteins in 1, 3, 5, 7, 10, 14, 15; CMLO2.3 and NAT8L (acetyltransf., 1, 2, 4; 1, 4); acid phosphatase (1, 2, 4, 21)
 
 #mitotic/germline
 #look for cyclins and tubulins
-sy65 <- c("SYT1", "SY65", "CO6A5.7", "ESYT3") #synaptotagmin, mitotic marker in spist; first is in 14; second in 10; third is in 14; fourth is in 4, 5, 9, 14, 20
+sy65 <- c("SYT1", "SY65", "CO6A5.7", "ESYT3") #synaptotagmin, mitotic marker in spist; first is in 14; second in 11; third is in 14; fourth is in 3, 5, 10, 14, 19
 
 #epidermis
-pxdn <- c("PXDN.2", "PXDN.10", "PXDN.18", "PXDN.16") #first high in 4 and 9; second high in 9; third in 28; fourth in 4/9/14
-moxd1 <- c("MOXD1.11", "MOXD1.1", "MOXD1") #DBH-like monooxygenase protein, markers for many; these high in 10
-gst1 <- c("GST1.2","MGST1") #in 1, 6, 10, 11, 15
-cadh <- c("FAT4.10", "FAT2.3", "PCDL") #FAT4s in 1, 2, 3, 19; fat2 in 12; pcdls in 5, 20, 27
+pxdn <- c("PXDN.2", "PXDN.10", "PXDN.18", "PXDN.16") #first high in 3 and 10; second high in 10; third in 25; fourth in 3/10
+moxd1 <- c("MOXD1.11", "MOXD1.1", "MOXD1") #DBH-like monooxygenase protein, markers for many; these high in 11; others in 1/2/3/5/6/9/10/13/14/19
+gst1 <- c("GST1.2","MGST1") #GST1.2 in 1, 6, 11, 15; 1, 11
+cadh <- c("FAT4.10", "FAT2.3", "PCDL") #FAT4s in 1, 2, 4, 24; fat2 in 13; pcdls in 5, 19, 27
 
 #neuron
-pkd1 <- c("PKD1.1", "PKD1.2", "PKD1.4") #markers for 12, 16, 20
-dclk2 <- c("DCLK2.1", "DCLK2.2") #markers for 5, 10, 17, 20, 28 ; in many cells
-cel3b <- c("CEL3B") #chymotrypsin-like elastase family member 3B, marker for 5 and 20
+pkd1 <- c("PKD1.1", "PKD1.2", "PKD1.4") #markers for 13, 16, 19
+dclk2 <- c("DCLK2.1", "DCLK2.2") #markers for 5, 11, 17, 19, 25 ; in many cells
+cel3b <- c("CEL3B") #chymotrypsin-like elastase family member 3B, marker for 5 and 19
 cabp5 <- c("CABP5") #calcium binding protein 5, calcium gated channel (neuron-y), marker for 17
-trpa <- c("TRPA1.17") #marker for many, this one highest in 16, 23
+trpa <- c("TRPA1.17") #marker for many, this one highest in 8, 16, 21
 atoh8 <- c("ATOH8") #neuron marker in spist, ns
-kcn <- c("KCNF1", "KCNAE") #potassium voltage gated channel thing markers for 5, 11, 12, 20; 12, 13, 17, 20 --> mostly 12
-cbpd <- c("CBPA2.2", "CBPD.3", "CBPB1", "CBPA4") #carboxypeptidase, marker for 18
+kcn <- c("KCNF1", "KCNAE") #potassium voltage gated channel thing markers for 5, 9, 13, 19; 12, 13, 17, 19 --> mostly 13
+cbpd <- c("CBPA2.2", "CBPD.3", "CBPB1", "CBPA4") #carboxypeptidase, markers for 5; 18; ns; 12
 lwa <- c("LWA", "LWA.1") #ns
-chymo <- c("CEL3B", "CPP1.13", "CTRL.2", "CEL2A.4", "PLMN.2", "TMPS3", "CTRA.1") #all could be chymptrypsin homologs; in 5/20 (CEL3B); 22/23 (TMPS3)
-cabo <- c("CABO.1") #squidulin (calmodulin homolog) marker for many including 5, 17, 20
-calm <- c("CALM.13") #calmodulin, many calmodulin markers including for 5, 11, 20
-cac1 <- c("CAC1A") #marker for many; voltage-dep calcium channel; 5; 12, 13, 17, 20, 22, 27
-scn <- c("SCN2A") #marker for 5, 11, 12, 20, 27; sodium channel
+chymo <- c("CEL3B", "CPP1.13", "CTRL.2", "CEL2A.4", "PLMN.2", "TMPS3", "CTRA.1") #all could be chymptrypsin homologs; in 5/19 (CEL3B); 20/21 (TMPS3)
+cabo <- c("CABO.1") #squidulin (calmodulin homolog) marker for many including 5, 17, 19
+calm <- c("CALM.13") #calmodulin, many calmodulin markers including for 5, 11, 19
+cac1 <- c("CAC1A") #marker for many; voltage-dep calcium channel; 5, 12, 13, 17, 19, 20, 27
+scn <- c("SCN2A") #marker for 5, 9, 13, 19, 27; sodium channel
 
 #gland
 olm2 <- c("OLM2A.6", "OLM2B") #olfactomedin, markers 18
-muc5a <- c("MUC5A") #mucin 5AC marker for 8, 16, 19, 23
-mlp <- c("MLP.12", "MLP") #mucin-like proteins, mlps in many, these mostly in 8/9/14/16/19/23
-#some mlrp integumentary mucins in 8, 13, 23 and others
-#lots of fbc fibrinogen in 18
+muc5a <- c("MUC5A") #mucin 5AC marker for 8, 16, 21, 24
+mlp <- c("MLP.12", "MLP") #mucin-like proteins, mlps in many, these mostly in 8/10/14/16/24
+#some mlrp integumentary mucins in 8, 21, 22 and others
+#lots of fbc fibrinogen in 18 and some in 22
 
 #calicoblast
-hemopexin <- c("EPRA1.2") #marker for 23 but still not great
-myof <- c("MYOF","MYOF.5") #myoferlin/dysferlin markers many cells including 23
+hemopexin <- c("EPRA1.2") #marker for 21 but still not great
+myof <- c("MYOF","MYOF.5") #myoferlin/dysferlin markers many cells including 16, 21, 22
 adam <- c("ADAM8.2") #metallopeptidase marker for 8 and 26, mostly 26
-# a lot of Uncharacterized skeletal organic matrix protein in 18, some in 23
+# a lot of Uncharacterized skeletal organic matrix protein in 18, some in 21
 # hemicentin is in many cells and there are many orthologs
 #sodium bicarbonate transporters in 6
 
-VlnPlot(object =oculina, features = adam, pt.size= 0,combine = F,assay = "RNA") 
+VlnPlot(object =oculina_new, features = adam, pt.size= 0,combine = F,assay = "RNA") 
 ```
 
 Predictions:
 Gastro:
-- 1 (otx1, tropomyosin, apoB, galk, carb, npc2, granulins, S2611, LAMP1, GRP78, glutamic acid-rich, acid phosphatase)
-- 2 (DEAF1, erg, fli1, etv6, elf4, spdef, otx1, apoB, tropomyosin, granulins, LAMP1, PLCL, acetyltransf., acid phosphatase)
-- 3 (DEAF1, elf4, apoB, aplp, galk, granulins, S2611, PLCL, acetyltransf., acid phosphatase)
-  - 4 (elf4, carb, tropomyosin, glutamic acid-rich)
-  - 5 (tropomyosin, glutamic acid-rich)
-  - 6 (carb, tropomyosin)
-- 7 (elf4, apoB, aplp, glutamic acid-rich)
-  - 9 (spdef, carb, tropomyosin, glutamic acid-rich)
-  - 10 (tropomyosin)
-  - 11 (aplp, tropomyosin)
-  - 12 (spdef, elf4, aplp)
-  - 13 (spdef, tropomyosin)
-  - 14 (elf4, carb, tropomyosin, glutamic acid-rich)
-  - 15 (tropomyosin, npc2, LAMP1, glutamic acid-rich)
-  - 17 (elf4)
-  - 16 (carb)
-  - 18 (PLCL)
-  - 19 (carb)
-  - 20 (elf4)
-- 21 (aplp)
-  - 22 (spdef)
-  - 23 (acid phosphatase)
-  - 28 (aplp)
-
-Epidermis
-  - 1 (gst1, FAT4s)
-  - 2 (nfe2, FAT4s)
-  - 3 (FAT4s)
-- 4 (pxdn)
-  - 5 (pcdls)
-- 6 (gst1)
-- 9 (pxdn)
-  - 10 (moxd1, gst1)
-  - 11 (gst1)
-  - 12 (fat2)
-- 14 (pxdn)
-  - 15 (gst1)
-  - 19 (FAT4s)
-  - 20 (pcdls)
-  - 26 (pax2)
-  - 27 (pcdls)
-  - 28 (pax2, pxdn)
-  
-Neuron
-  - 4 (pax7)
-- 5 (dclk2, cel3b, kcn, chymo, cabo, calm, cac1, scn)
-  - 9 (pax7)
-  - 10 (dclk2)
-  - 11 (kcn, calm, scn)
-- 12 (pou4, tbx20, pkd1, kcn, cac1, scn)
-  - 13 (kcn, cac1)
-  - 14 (pax7)
-  - 16 (pkd1, trpa)
-- 17 (tbx20, dclk2, cabp5, kcn, cabo, cac1)
-  - 18 (cbpd)
-- 20 (pou4, pkd1, dclk2, cel3b, kcn, chymo, cabo, calm, cac1, scn)
-  - 22 (tbx20, chymo, cac1)
-  - 23 (trpa, chymo)
-  - 27 (pou4, cac1, scn)
-  - 26 (gata2)
-  - 28 (pou4, dclk2)
-  
-Immune
+- 1 (erg, otx1, tropomyosin, apoB, aplp, galk, carb, npc2, granulins, S2611, LAMP1, GRP78, PLCL, glutamic acid-rich protein, CMLO2.3, NAT8L, acid phosphatase)
+- 2 (deaf1, elf4, apoB, aplp, granulins, S2611, PLCL, CMLO2.3, acid phosphatase)
+    - 3 (tropomyosin, carb, glutamic acid-rich protein)
+- 4 (deaf1, erg, etv6, elf4, spdef, otx1, tropomyosin, apoB, aplp, granulins, LAMP1, PLCL, CMLO2.3, NAT8L, acid phosphatase)
+    - 5 (tropomyosin, glutamic acid-rich protein)
+    - 6 (tropomyosin, carb)
+- 7 (apoB, aplp, glutamic acid-rich protein)
+    - 9 (tropomyosin)
+    - 10 (spdef, tropomyosin, carb, glutamic acid-rich protein)
+    - 11 (tropomyosin)
+    - 12 (tropomyosin)
+    - 13 (elf4, spdef)
+    - 14 (tropomyosin, carb, glutamic acid-rich protein)
+    - 15 (tropomyosin, npc2, LAMP1, glutamic acid-rich protein)
+    - 16 (carb)
+    - 17 (elf4)
+    - 18 (PLCL)
+    - 21 (acid phosphatase)
+    - 24 (carb)
+    
+Epidermis:
+    - 1 (moxd1, gst1, FAT4)
+    - 2 (moxd1, FAT4)
+- 3 (pxdn, moxd1)
+    - 4 (nfe2, FAT4)
+    - 5 (moxd1, PCDL)
+    - 6 (moxd1, gst1)
+    - 9 (moxd1)
+- 10 (pxdn, moxd1)
+    - 11 (moxd1, gst1)
+    - 13 (moxd1, FAT2)
+- 14 (moxd1)
+    - 15 (gst1)
+    - 19 (moxd1, PCDL)
+    - 24 (FAT4)
+    - 25 (pax2, pxdn)
+    - 26 (pax2)
+    - 27 (PCDL)
+    
+Neuron:
+    - 3 (pax7)
+- 5 (dclk2, cel3b, kcn, cbpd, chymo, cabo, calm, cac1, scn)
+    - 8 (trpa)
+    - 9 (kcn, scn)
+    - 10 (pax7)
+    - 11 (dclk2, calm)
+    - 12 (kcn, cbpd, cac1)
+    - 13 (pou4, tbx20, pkd1, kcn, cac1, scn)
+    - 14 (pax7)
+    - 16 (pkd1, trpa)
+- 17 (gata2, tbx20, dclk2, cabp5, kcn, cabo, cac1)
+    - 18 (cbpd)
+- 19 (pou4, pkd1, dclk2, cel3b, kcn, chymo, cabo, calm, cac1, scn)
+    - 20 (tbx20, chymo, cac1)
+    - 21 (trpa, chymo)
+    - 25 (pou4, dclk2)
+    - 26 (gata2)
+    - 27 (pou4, cac1, scn)
+    
+Immune:
 - 15 (irf1, irf2, atf3, alps, hsp70, hsp90, alphaB, cathepsin, bcl2, lbp, endop, gbp6, casp3, ttc28)
 
-Gland
-  - 8 (muc5a, mlp)
-  - 9 (mlp)
-  - 10 (rfx)
-  - 13 (mucins and integumentary etc)
-  - 14 (mlp)
-  - 16 (rfx, muc5a, mlp)
-  - 18 (rfx, olm2)
-  - 19 (muc5a, mlp)
-  - 22 (rfx)
-  - 23 (muc5a, mlp)
-  - 24 (myof and dysf etc)
-  
-Calicoblast
-  - 1 (myb, dbp)
-  - 2 (dmrt)
-  - 3 (myb, ncor, atf)
-  - 4 (dmrt)
-  - 5 (dbp)
-  - 7 (ssrp1)
-  - 8 (adam)
-  - 14 (prdm9)
-  - 17 (dmrt)
-  - 18 (USOM)
-  - 20 (prdm9)
-  - 23 (hemopexin, myof, USOM)
-- 25 (dnajc21, myb, ncor, fox)
-  - 26 (adam)
-  - 28 (atf2)
-  
-Cnidocyte
-- 8 (tal2)
-- 16 (tal2)
-
+Gland:
+    - 8 (muc5a, mlp, mlrp)
+    - 10 (mlp)
+    - 11 (rfx)
+    - 14 (mlp)
+    - 16 (rfx, muc5a, mlp)
+    - 18 (rfx, olm2, fbc)
+    - 20 (rfx)
+    - 21 (muc5a, mlrp)
+    - 22 (mlrp, fbc)
+    - 24 (muc5a, mlp)
+    
+Calicoblast:
+    - 1 (myb, dbp)
+    - 2 (myb, ncor, atf)
+    - 3 (dmrt)
+    - 4 (dmrt)
+    - 5 (dbp)
+    - 6 (sodium bicarbonate transporter)
+    - 7 (ssrp1)
+    - 8 (adam)
+    - 14 (prdm9)
+    - 16 (myof)
+    - 18 (usom)
+    - 19 (prdm9)
+    - 21 (hemopexin, myof, adam)
+    - 22 (myof)
+- 23 (DJC21, myb, ncor, forkhead)
+    - 25 (atf2, forkhead)
+    - 26 (adam)
+    - 27 (forkhead)
+    
+Cnidocyte:
+    - 8 (tal2)
+    - 16 (tal2)
+    
 1 [Gastrodermis]
 2 [Gastrodermis]
-3 [Gastrodermis]
-4 [Epidermis]
+3 [Epidermis]
+4 [Gastrodermis]
 5 [Neuron]
-6 [Epidermis]
+6 [Epidermis] ??
 7 [Gastrodermis]
 8 [Cnidocyte]
 9 [Epidermis]
-10 [Gland] ?
-11 [Epidermis] ?
-12 [Neuron]
-13 [Gland] ?
+10 [Epidermis]
+11 [Gland] ?
+12 [Gland] ?
+13 [Neuron]
 14 [Epidermis]
 15 [Immune Cell]
 16 [Cnidocyte]
 17 [Neuron]
 18 [Gland]
-19 [Epidermis] ?
-20 [Neuron]
-21 [Algal-hosting]
-22 [Gland] ?
-23 [Gland] ?
-24 [Gland] ?
-25 [Calicoblast] ? for now
-26 [Neuron]
+19 [Neuron]
+20 [Gland]
+21 [Gland]
+22 [Neuron]
+23 [Calicoblast]
+24 [Gland]
+25 [Neuron]
+26 [Epidermis]
 27 [Neuron]
-28 [Neuron]
 
 ```{r}
-oc_markers_pre<- FindAllMarkers(oculina, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
-nrow(oc_markers_pre)
-#6259
+oc_markers_pre_new<- FindAllMarkers(oculina_new, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
+nrow(oc_markers_pre_new)
+#5852
 
-oc_markers_pre %>% group_by(cluster) %>% top_n(20, avg_log2FC) -> top20_pre
-top20_pre
-nrow(top20_pre)
-#560
+oc_markers_pre_new %>% group_by(cluster) %>% top_n(20, avg_log2FC) -> top20_pre_new
+top20_pre_new
+nrow(top20_pre_new)
+#540
 
 color<-colorRampPalette(brewer.pal(n=9, name="Reds"),bias=0.5)(20)
 
-DoHeatmap(oculina, features = top20_pre$gene, label=T) + theme(axis.text.y= element_text(size=0)) + scale_fill_gradientn(colors=color)
+DoHeatmap(oculina_new, features = top20_pre_new$gene, label=T) + theme(axis.text.y= element_text(size=0)) + scale_fill_gradientn(colors=color)
 ```
 
 Rename cell clusters with new names
 ```{r}
-oculina_named_h <- RenameIdents(oculina, "1" = "Gastrodermis 1")
-oculina_named_h <- RenameIdents(oculina_named_h, "2" = "Gastrodermis 2")
-oculina_named_h <- RenameIdents(oculina_named_h, "3" = "Gastrodermis 3")
-oculina_named_h <- RenameIdents(oculina_named_h, "4" = "Epidermis 1")
-oculina_named_h <- RenameIdents(oculina_named_h, "5" = "Neuron 1")
-oculina_named_h <- RenameIdents(oculina_named_h, "6" = "Epidermis 2")
-oculina_named_h <- RenameIdents(oculina_named_h, "7" = "Gastrodermis 4")
-oculina_named_h <- RenameIdents(oculina_named_h, "8" = "Cnidocyte 1")
-oculina_named_h <- RenameIdents(oculina_named_h, "9" = "Epidermis 3")
-oculina_named_h <- RenameIdents(oculina_named_h, "10" = "Gland 1")
-oculina_named_h <- RenameIdents(oculina_named_h, "11" = "Epidermis 4")
-oculina_named_h <- RenameIdents(oculina_named_h, "12" = "Neuron 2")
-oculina_named_h <- RenameIdents(oculina_named_h, "13" = "Gland 2")
-oculina_named_h <- RenameIdents(oculina_named_h, "14" = "Epidermis 5")
-oculina_named_h <- RenameIdents(oculina_named_h, "15" = "Immune Cell")
-oculina_named_h <- RenameIdents(oculina_named_h, "16" = "Cnidocyte 2")
-oculina_named_h <- RenameIdents(oculina_named_h, "17" = "Neuron 3")
-oculina_named_h <- RenameIdents(oculina_named_h, "18" = "Gland 3")
-oculina_named_h <- RenameIdents(oculina_named_h, "19" = "Epidermis 6")
-oculina_named_h <- RenameIdents(oculina_named_h, "20" = "Neuron 4")
-oculina_named_h <- RenameIdents(oculina_named_h, "21" = "Algal-Hosting")
-oculina_named_h <- RenameIdents(oculina_named_h, "22" = "Gland 4")
-oculina_named_h <- RenameIdents(oculina_named_h, "23" = "Gland 5")
-oculina_named_h <- RenameIdents(oculina_named_h, "24" = "Gland 6")
-oculina_named_h <- RenameIdents(oculina_named_h, "25" = "Calicoblast")
-oculina_named_h <- RenameIdents(oculina_named_h, "26" = "Neuron 5")
-oculina_named_h <- RenameIdents(oculina_named_h, "27" = "Neuron 6")
-oculina_named_h <- RenameIdents(oculina_named_h, "28" = "Neuron 7")
+oculina_named_new <- RenameIdents(oculina_new, "1" = "Gastrodermis 1")
+oculina_named_new <- RenameIdents(oculina_named_new, "2" = "Gastrodermis 2")
+oculina_named_new <- RenameIdents(oculina_named_new, "3" = "Epidermis 1")
+oculina_named_new <- RenameIdents(oculina_named_new, "4" = "Gastrodermis 3")
+oculina_named_new <- RenameIdents(oculina_named_new, "5" = "Neuron 1")
+oculina_named_new <- RenameIdents(oculina_named_new, "6" = "Epidermis 2")
+oculina_named_new <- RenameIdents(oculina_named_new, "7" = "Gastrodermis 4")
+oculina_named_new <- RenameIdents(oculina_named_new, "8" = "Cnidocyte 1")
+oculina_named_new <- RenameIdents(oculina_named_new, "9" = "Epidermis 3")
+oculina_named_new <- RenameIdents(oculina_named_new, "10" = "Epidermis 4")
+oculina_named_new <- RenameIdents(oculina_named_new, "11" = "Gland 1")
+oculina_named_new <- RenameIdents(oculina_named_new, "12" = "Gland 2")
+oculina_named_new <- RenameIdents(oculina_named_new, "13" = "Neuron 2")
+oculina_named_new <- RenameIdents(oculina_named_new, "14" = "Epidermis 5")
+oculina_named_new <- RenameIdents(oculina_named_new, "15" = "Immune Cell")
+oculina_named_new <- RenameIdents(oculina_named_new, "16" = "Cnidocyte 2")
+oculina_named_new <- RenameIdents(oculina_named_new, "17" = "Neuron 3")
+oculina_named_new <- RenameIdents(oculina_named_new, "18" = "Gland 3")
+oculina_named_new <- RenameIdents(oculina_named_new, "19" = "Neuron 4")
+oculina_named_new <- RenameIdents(oculina_named_new, "20" = "Gland 4")
+oculina_named_new <- RenameIdents(oculina_named_new, "21" = "Gland 5")
+oculina_named_new <- RenameIdents(oculina_named_new, "22" = "Neuron 5")
+oculina_named_new <- RenameIdents(oculina_named_new, "23" = "Calicoblast")
+oculina_named_new <- RenameIdents(oculina_named_new, "24" = "Gland 6")
+oculina_named_new <- RenameIdents(oculina_named_new, "25" = "Neuron 6")
+oculina_named_new <- RenameIdents(oculina_named_new, "26" = "Epidermis 6")
+oculina_named_new <- RenameIdents(oculina_named_new, "27" = "Neuron 7")
 
-levels(oculina_named_h)
-levels(oculina_named_h) <- c("Gastrodermis 1", "Gastrodermis 2", "Gastrodermis 3", "Gastrodermis 4", "Algal-Hosting", "Epidermis 1", "Epidermis 2", "Epidermis 3", "Epidermis 4", "Epidermis 5", "Epidermis 6", "Neuron 1", "Neuron 2", "Neuron 3", "Neuron 4", "Neuron 5", "Neuron 6", "Neuron 7", "Gland 1", "Gland 2", "Gland 3", "Gland 4", "Gland 5", "Gland 6", "Calicoblast", "Cnidocyte 1", "Cnidocyte 2", "Immune Cell")
-levels(oculina_named_h)
+levels(oculina_named_new)
+levels(oculina_named_new) <- c("Gastrodermis 1", "Gastrodermis 2", "Gastrodermis 3", "Gastrodermis 4", "Epidermis 1", "Epidermis 2", "Epidermis 3", "Epidermis 4", "Epidermis 5", "Epidermis 6", "Neuron 1", "Neuron 2", "Neuron 3", "Neuron 4", "Neuron 5", "Neuron 6", "Neuron 7", "Gland 1", "Gland 2", "Gland 3", "Gland 4", "Gland 5", "Gland 6", "Calicoblast", "Cnidocyte 1", "Cnidocyte 2", "Immune Cell")
+levels(oculina_named_new)
 
-DefaultAssay(oculina_named_h) <- "RNA"
-saveRDS(oculina_named_h, paste0(proj_name, '_oculinanamed_clean_091524.rds'))
-oculina_named_h <- readRDS(file.choose())
+DefaultAssay(oculina_named_new) <- "RNA"
+saveRDS(oculina_named_new, paste0(proj_name, '_oculinanamed_NEW_091724.rds'))
+oculina_named_new <- readRDS(file.choose())
 
 install.packages("simplecolors")
 library(simplecolors)
 
 gastro_col <- colorRampPalette(c("#C7B8E6", "#330099"))    
-gdc <- gastro_col(5) 
-gdc5 <- c("#C7B8E6", "#A28AD2", "#7D5CBF", "#582EAC", "#330099")
+gdc <- gastro_col(4) 
+gdc4 <- c("#C7B8E6", "#957ACC", "#643DB2", "#330099")
 epi_col <- colorRampPalette(c("#B6D8B6", "#006600"))
 ec <- epi_col(6) 
 ec6 <- c("#B6D8B6", "#91C191", "#6DAA6D", "#489348", "#247C24", "#006600")
@@ -702,14 +726,14 @@ gland_col <- colorRampPalette(c("#E6B8BF","#9C1616"))
 gc <- gland_col(6)
 gc6 <- c("#E6B8BF", "#D7979D", "#C8777B", "#B95659", "#AA3637", "#9C1616")
 
-cols <- c("#C7B8E6", "#A28AD2", "#7D5CBF", "#582EAC", "#330099", "#B6D8B6", "#91C191", "#6DAA6D", "#489348", "#247C24", "#006600", "#B8DEE6", "#99CAD9", "#7AB6CC", "#5CA2BF", "#3D8EB2", "#1E7AA5", "#006699", "#E6B8BF", "#D7979D", "#C8777B", "#B95659", "#AA3637", "#9C1616", "#996633", "#FF9900", "#FFCC66", "#333333")
+cols <- c("#C7B8E6", "#957ACC", "#643DB2", "#330099", "#B6D8B6", "#91C191", "#6DAA6D", "#489348", "#247C24", "#006600", "#B8DEE6", "#99CAD9", "#7AB6CC", "#5CA2BF", "#3D8EB2", "#1E7AA5", "#006699", "#E6B8BF", "#D7979D", "#C8777B", "#B95659", "#AA3637", "#9C1616", "#996633", "#FF9900", "#FFCC66", "#333333")
 
-plot1 <- DimPlot(oculina_named_h, reduction = "umap", label=F, label.size = 3, cols=cols, alpha=0.5) 
-LabelClusters(plot1, id = "ident", size = 3, repel = T,  box.padding = 0.2, fontface="bold") + theme(legend.text=element_text(size=10))
-#umap_oculina_091524 as landscape 8.5x6.5
+plot1 <- DimPlot(oculina_named_new, reduction = "umap", label=F, label.size = 3, cols=cols, alpha=0.5) 
+LabelClusters(plot1, id = "ident", size = 3, repel = T,  box.padding = 0.25, fontface="bold") + theme(legend.text=element_text(size=10))
+#umap_oculina_091724 as landscape 8.5x6
 
-plot2 <- DimPlot(oculina_named_h, reduction = "umap", label=F,  shuffle=TRUE, group.by = "symstate", cols=c("gray40", "#CC6600"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
-#umap_oculina_aposym_091524 as landscape 6.5x5.5
+plot2 <- DimPlot(oculina_named_new, reduction = "umap", label=F,  shuffle=TRUE, group.by = "symstate", cols=c("gray40", "#CC6600"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
+#umap_oculina_aposym_091724 as landscape 6.5x5.5
 ```
 
 Reread about comparative analysis for calicoblast
@@ -717,34 +741,34 @@ Reread about comparative analysis for calicoblast
 Top 10 and top 20 genes per cluster
 ```{r}
 #get the top10 from the re-leveled oculina_named seurat object
-oc_markers_lvld<- FindAllMarkers(oculina_named_h, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
-nrow(oc_markers_lvld)
-#6259
+oc_markers_lvld_new<- FindAllMarkers(oculina_named_new, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
+nrow(oc_markers_lvld_new)
+#5852
 
-oc_markers_lvld %>% group_by(cluster) %>% top_n(10, avg_log2FC) -> top10_lev
-top10_lev
-nrow(top10_lev)
-#280
-#gives the top 10 genes for each cluster; 28 clusters
-saveRDS(top10_lev, paste0(proj_name, '_top10_releveled_named_091524.rds'))
+oc_markers_lvld_new %>% group_by(cluster) %>% top_n(10, avg_log2FC) -> top10_lev_new
+top10_lev_new
+nrow(top10_lev_new)
+#270
+#gives the top 10 genes for each cluster; 27 clusters
+saveRDS(top10_lev_new, paste0(proj_name, '_top10_releveled_named_091724.rds'))
 
 #do top20
-oc_markers_lvld %>% group_by(cluster) %>% top_n(20, avg_log2FC) -> top20_lev
-top20_lev
-nrow(top20_lev)
-#560
-saveRDS(top20_lev, paste0(proj_name, '_top20_releveled_named_091524.rds'))
+oc_markers_lvld_new %>% group_by(cluster) %>% top_n(20, avg_log2FC) -> top20_lev_new
+top20_lev_new
+nrow(top20_lev_new)
+#540
+saveRDS(top20_lev_new, paste0(proj_name, '_top20_releveled_named_091724.rds'))
 
-DoHeatmap(oculina_named_h, features = top10_lev$gene,label=F, group.colors = cols) + theme(axis.text.y= element_text(size=0)) + scale_fill_gradientn(colors=color)
-#saved as top10_releveled_named_091524 as landscape 9x6
+DoHeatmap(oculina_named_new, features = top10_lev_new$gene,label=F, group.colors = cols) + theme(axis.text.y= element_text(size=0)) + scale_fill_gradientn(colors=color)
+#saved as top10_releveled_named_091724 as landscape 9x6
 
-DoHeatmap(oculina_named_h, features = top20_lev$gene,label=F, group.colors = cols) + theme(axis.text.y= element_text(size=0)) + scale_fill_gradientn(colors=color)
-#saved as top20_releveled_named_091524 as landscape 9x6
+DoHeatmap(oculina_named_new, features = top20_lev_new$gene,label=F, group.colors = cols) + theme(axis.text.y= element_text(size=0)) + scale_fill_gradientn(colors=color)
+#saved as top20_releveled_named_091724 as landscape 9x6
 ```
 
 ###analyze specific cell clusters
 
-Gastrodermis 1
+Gastrodermis 1 #####COME BACK
 ```{r}
 gderm1 <- subset(oculina_named_h, idents = "Gastrodermis 1") 
 
@@ -879,14 +903,14 @@ head(gderm1_4_mark)
 
 Gastrodermis 2
 ```{r}
-gderm2 <- subset(oculina_named_h, idents = "Gastrodermis 2") 
+gderm2 <- subset(oculina_named_new, idents = "Gastrodermis 2") 
 
 gderm2 <- FindVariableFeatures(gderm2)
-gderm2 <- ScaleData(gderm2, features = rownames(gderm2@assays$RNA@features))
+gderm2 <- ScaleData(gderm2, features = features_to_scale)
 gderm2 <- RunPCA(gderm2)
 gderm2 <- FindNeighbors(gderm2, dims = 1:30, reduction = "pca")
-gderm2 <- FindClusters(gderm2, resolution = 0.25)
-#1 cluster
+gderm2 <- FindClusters(gderm2, resolution = 0.5)
+#3 cluster
 gderm2 <- RunUMAP(gderm2, reduction="pca", dims=1:30, return.model=TRUE)
 
 #gderm2 <- RunUMAP(gderm2, dims = 1:30, reduction = "integrated.cca")
@@ -894,22 +918,138 @@ gderm2 <- RunUMAP(gderm2, reduction="pca", dims=1:30, return.model=TRUE)
 gderm2@meta.data$seurat_clusters <- as.numeric(as.character(gderm2@meta.data$seurat_clusters))+1
 Idents(gderm2)<- "seurat_clusters"
 gderm2$seurat_clusters
-gderm2@active.ident <- factor(x = gderm2@active.ident, levels = 1)
+gderm2@active.ident <- factor(x = gderm2@active.ident, levels = 1:4)
 gderm2@active.ident
 
-levels(gderm2) <- c("1")
+levels(gderm2) <- c("1", "2", "3", "4")
 
-plot7 <- DimPlot(gderm2, reduction = "umap", label = T, cols=c("#CC6699"), alpha=0.5)
-#1 cluster
+plot7 <- DimPlot(gderm2, reduction = "umap", label = T, cols=c("#CC6699", "#33CC99", "#3333FF", "#FF9900"), alpha=0.5)
+#4 clusters
 
 
 plot8 <- DimPlot(gderm2, reduction = "umap", label=F, order=c("sym", "apo"), group.by = "symstate", cols=c("gray40", "#CC6600"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
 
-plot8b <- DimPlot(gderm2, reduction = "umap", label=T, split.by = "symstate", cols=c("#CC6699"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
+plot8b <- DimPlot(gderm2, reduction = "umap", label=T, split.by = "symstate", cols=c("#CC6699", "#33CC99", "#3333FF", "#FF9900"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
 
 #saved as umap_gderm2_plot7plot8_new 9x4
 #umap_gderm2_plot8b_new 8x4 landscape
+
+#do the intersection between gderm2 cells and algal cells then dimplot them
+gderm2_cell_ids <- rownames(gderm2@meta.data)
+sym_gderm2_intersect <- intersect(gderm2_cell_ids, alga_cells)
+
+symcell_gderm2_plot <- DimPlot(gderm2, reduction = "umap", cells.highlight = sym_gderm2_intersect, cols.highlight=c("black"), split.by = "symstate")
+#saved as sym_cells_umap_091624 as 6x6
 ```
+
+```{r}
+gderm2_topfeat <- TopFeatures(object = gderm2[["pca"]], dim = 1, nfeatures = 20, balanced = TRUE)
+gderm2[["umap"]]@cell.embeddings
+##https://hbctraining.github.io/scRNA-seq_online/lessons/08_SC_clustering_quality_control.html
+columns <- c(paste0("PC_", 1:10),
+            "ident",
+            "umap_1", "umap_2")
+pc_data_gd2 <- FetchData(gderm2, 
+                     vars = columns)
+# Adding cluster label to center of cluster on UMAP
+umap_label_gd2 <- FetchData(gderm2, 
+  vars = c("ident", "umap_1", "umap_2"))  %>%
+  group_by(ident) %>%
+  summarise(x=mean(umap_1), y=mean(umap_2))
+# Plotting a UMAP plot for each of the PCs
+
+map(paste0("PC_", 1:10), function(pc){
+        ggplot(pc_data_gd2, 
+               aes(umap_1, umap_2)) +
+                geom_point(aes_string(color=pc), 
+                           alpha = 0.7) +
+                scale_color_gradient(guide = FALSE, 
+                                     low = "grey90", 
+                                     high = "blue")  +
+                geom_text(data=umap_label_gd2, 
+                          aes(label=ident, x, y)) +
+                ggtitle(pc)
+}) %>% 
+        plot_grid(plotlist = .)
+#saved as gderm2_pcplots_umap_091724
+
+DimPlot(gderm2, reduction = "pca", label=F, order=c("sym", "apo"), group.by = "symstate", cols=alpha(c("gray40", "#CC6600"), 0.5))
+
+stdev_gd2 <- Stdev(gderm2, reduction = "pca")
+
+pca_gd2 <- pc_data_gd2
+pca_gd2$sym_state <- gderm2@meta.data$symstate
+summary(aov(PC_1 ~ sym_state, data = pca_gd2)) #1.07e-05 ***
+summary(aov(PC_2 ~ sym_state, data = pca_gd2)) #<2e-16 ***
+summary(aov(PC_3 ~ sym_state, data = pca_gd2)) #0.247
+summary(aov(PC_4 ~ sym_state, data = pca_gd2)) #2.81e-11 ***
+summary(aov(PC_5 ~ sym_state, data = pca_gd2)) #4.05e-08 ***                         
+summary(aov(PC_6 ~ sym_state, data = pca_gd2)) #0.0639 .
+summary(aov(PC_7 ~ sym_state, data = pca_gd2)) #0.0765 .
+summary(aov(PC_8 ~ sym_state, data = pca_gd2)) #0.00169 **
+summary(aov(PC_9 ~ sym_state, data = pca_gd2)) #0.0239 *
+summary(aov(PC_10 ~ sym_state, data = pca_gd2)) #0.0917 .
+
+print(gderm2[["pca"]], dims = 1:5, nfeatures = 10)
+
+DefaultAssay(gderm2) <- "RNA"
+gderm2[["RNA"]]$counts<-as.matrix(gderm2[["RNA"]]$counts)+1
+
+#this to look at apo vs sym differentially expressed genes
+gderm2_mark <- FindMarkers(gderm2, ident.1 = "sym", ident.2="apo", group.by = "symstate", test.use="DESeq2", slot = "counts")
+head(gderm2_mark)
+#neg lfc means down in sym; pos lfc means up in sym
+
+
+gderm2_mark <- rownames_to_column(gderm2_mark, var="gene_symbol")
+
+#look at subcluster marker genes
+gderm2_markers_subclust <- FindAllMarkers(gderm2, 
+                          min.pct = -Inf, 
+                          logfc.threshold = .5, 
+                          only.pos = T, 
+                          test.use = "MAST",
+                          latent.vars = c('percent.mt', 'nFeature_RNA'))
+
+gderm2_markers_subclust
+gderm2_markers_subclust <- rownames_to_column(gderm2_markers_subclust, var="gene_symbol")
+
+#I could do findmarkers to define the difference between the algal-hosting cells and the other gderm2 cells
+
+# also do some feature plots with the immunity and nutrition genes
+catl.9_feat_plot_g2 <- FeaturePlot(gderm2, features=c("CATL.9"), split.by = "symstate", order = TRUE, reduction="umap",  min.cutoff = 2) + theme(legend.position = c(0.98,0.98))
+catl.7_feat_plot_g2 <- FeaturePlot(gderm2, features=c("CATL.7"), split.by = "symstate", order = TRUE, reduction="umap",  min.cutoff = 2) + theme(legend.position = c(0.98,0.98))
+catb.1_feat_plot_g2 <- FeaturePlot(gderm2, features=c("CATB.1"), split.by = "symstate", order = TRUE, reduction="umap",  min.cutoff = 2) + theme(legend.position = c(0.98,0.98))
+h90_feat_plot_g2 <- FeaturePlot(gderm2, features=c("H90A1"), split.by = "symstate", order = TRUE, reduction="umap",  min.cutoff = 2) + theme(legend.position = c(0.98,0.98))
+
+glsn_feat_plot_g2 <- FeaturePlot(gderm2, features=c("GLSN"), split.by = "symstate", order = TRUE, reduction="umap",  min.cutoff = 1) + theme(legend.position = c(0.98,0.98))
+aplp_feat_plot_g2 <- FeaturePlot(gderm2, features=c("APLP"), split.by = "symstate", order = TRUE, reduction="umap",  min.cutoff = 3) + theme(legend.position = c(0.98,0.98))
+apoB1_feat_plot_g2 <- FeaturePlot(gderm2, features=c("APOB.1"), split.by = "symstate", order = TRUE, reduction="umap",  min.cutoff = 3) + theme(legend.position = c(0.98,0.98))
+
+################# HAVEN'T DONE BELOW YET
+#get apo vs sym differences for subcluster 1 of gderm1
+gderm3_1 <- subset(gderm3, idents="1")
+DefaultAssay(gderm3_1) <- "RNA"
+
+gderm3_1_mark <- FindMarkers(gderm3_1, ident.1 = "sym", ident.2="apo", group.by = "symstate", test.use="DESeq2", slot = "counts")
+gderm3_1_mark <- rownames_to_column(gderm3_1_mark, var="gene_symbol")
+head(gderm3_1_mark)
+
+#get apo vs sym differences for subcluster 2 of gderm1
+gderm3_2 <- subset(gderm3, idents="2")
+DefaultAssay(gderm3_2) <- "RNA"
+#no apos
+
+#for 3
+gderm3_3 <- subset(gderm3, idents="3")
+DefaultAssay(gderm3_3) <- "RNA"
+
+gderm3_3_mark <- FindMarkers(gderm3_3, ident.1 = "sym", ident.2="apo", group.by = "symstate", test.use="DESeq2", slot = "counts")
+gderm3_3_mark <- rownames_to_column(gderm3_3_mark, var="gene_symbol")
+head(gderm3_3_mark)
+
+```
+
 
 Gastrodermis 3
 ```{r}
