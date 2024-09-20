@@ -294,7 +294,6 @@ sym_feat_plot3 <- FeaturePlot(merge, features=c("Sym.111787.c1.g1.i6"), split.by
 #so those 45 sym cells identified in algal-hosting cell from before and now in gderm are the actual algal-hosting cells
 
 
-
 ################ trying to now remove the sym genes
 counts <- GetAssayData(merge, assay = "RNA")
 length(rownames(counts))
@@ -307,8 +306,22 @@ counts_lim <- counts[1:24716,]
 #counts_names <- counts_names[1:24716]
 #counts_names_df <- as.data.frame(counts_names)
 
-ultimate_merge <- subset(merge, features = rownames(counts_lim))
+#get list of sym genes just to have
+counts_sym <-rownames(counts[24717:31026,])
+
+#remove cells with high percentage of sym genes that are messing shit up
+merge_sym_percent <- PercentageFeatureSet(merge, features = counts_sym, col.name = "sym_percent")
+#filter out cells that have over 50% symbiont reads
+#merge_metadata <- merge_sym_percent@meta.data
+#merge_metadata_highsym <- filter(merge_metadata, sym_percent > 50)
+merge_nosym <- subset(merge_sym_percent, subset = sym_percent < 50)
+
+sym_cell_feat_plot_nosym <- DimPlot(merge_nosym, reduction = "umap", cells.highlight = alga_cells, cols.highlight=c("black"))
+
+# now remove sym genes all together
+ultimate_merge <- subset(merge_nosym, features = rownames(counts_lim))
 tail(rownames(ultimate_merge@assays$RNA))
+
 ```
 
 ```{r}
@@ -339,7 +352,7 @@ markers <- FindAllMarkers(ultimate_merge,
 markers <- markers %>%
   filter(avg_log2FC > 0)
 nrow(markers)
-#new 28272
+#new 24065
 
 markers_fullnames <- markers
 rownames(markers_fullnames) =NULL
@@ -359,8 +372,8 @@ markers_strong <- markers_fullnames %>%
   filter(pct.1 > 0.1)
 
 nrow(markers_strong)
-#new 7089
-write_csv(markers_strong, "./files/SuppDataset_oculina_markers_strong_091724.csv")
+#new 7132
+write_csv(markers_strong, "./files/SuppDataset_oculina_markers_strong_091824.csv")
 
 #from the inclusion of the symbiont genome/gtf, strong symbiont genes really only in cluster 21, a few others scattered
 ```
@@ -375,8 +388,8 @@ make "oculina" to manipulate around with and keep "merge" unmanipulated
 #merge@active.ident
 #head(merge)
 
-#oculina_new is the one that was PCA-ed and UMAP-ed without the symbiont reads
-oculina_new <- merge
+#oculina_new is the one that was PCA-ed and UMAP-ed without the symbiont reads then symbiont reads were removed
+oculina_new <- ultimate_merge
 ```
 
 First, look at symbiont genes
@@ -663,7 +676,7 @@ Cnidocyte:
 ```{r}
 oc_markers_pre_new<- FindAllMarkers(oculina_new, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
 nrow(oc_markers_pre_new)
-#5852
+#5766
 
 oc_markers_pre_new %>% group_by(cluster) %>% top_n(20, avg_log2FC) -> top20_pre_new
 top20_pre_new
@@ -710,7 +723,7 @@ levels(oculina_named_new) <- c("Gastrodermis 1", "Gastrodermis 2", "Gastrodermis
 levels(oculina_named_new)
 
 DefaultAssay(oculina_named_new) <- "RNA"
-saveRDS(oculina_named_new, paste0(proj_name, '_oculinanamed_NEW_091724.rds'))
+saveRDS(oculina_named_new, paste0(proj_name, '_oculinanamed_NEW_091824.rds'))
 oculina_named_new <- readRDS(file.choose())
 
 install.packages("simplecolors")
@@ -733,10 +746,12 @@ cols <- c("#C7B8E6", "#957ACC", "#643DB2", "#330099", "#B6D8B6", "#91C191", "#6D
 
 plot1 <- DimPlot(oculina_named_new, reduction = "umap", label=F, label.size = 3, cols=cols, alpha=0.5) 
 LabelClusters(plot1, id = "ident", size = 3, repel = T,  box.padding = 0.25, fontface="bold") + theme(legend.text=element_text(size=10))
-#umap_oculina_091724 as landscape 8.5x6
+#umap_oculina_091824 as landscape 8.5x6
 
 plot2 <- DimPlot(oculina_named_new, reduction = "umap", label=F,  shuffle=TRUE, group.by = "symstate", cols=c("gray40", "#CC6600"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
-#umap_oculina_aposym_091724 as landscape 6.5x5.5
+#umap_oculina_aposym_091824 as landscape 6.5x5.5
+
+
 ```
 
 Reread about comparative analysis for calicoblast
@@ -746,41 +761,41 @@ Top 10 and top 20 genes per cluster
 #get the top10 from the re-leveled oculina_named seurat object
 oc_markers_lvld_new<- FindAllMarkers(oculina_named_new, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
 nrow(oc_markers_lvld_new)
-#5852
+#5766
 
 oc_markers_lvld_new %>% group_by(cluster) %>% top_n(10, avg_log2FC) -> top10_lev_new
 top10_lev_new
 nrow(top10_lev_new)
 #270
 #gives the top 10 genes for each cluster; 27 clusters
-saveRDS(top10_lev_new, paste0(proj_name, '_top10_releveled_named_091724.rds'))
+saveRDS(top10_lev_new, paste0(proj_name, '_top10_releveled_named_091824.rds'))
 
 #do top20
 oc_markers_lvld_new %>% group_by(cluster) %>% top_n(20, avg_log2FC) -> top20_lev_new
 top20_lev_new
 nrow(top20_lev_new)
 #540
-saveRDS(top20_lev_new, paste0(proj_name, '_top20_releveled_named_091724.rds'))
+saveRDS(top20_lev_new, paste0(proj_name, '_top20_releveled_named_091824.rds'))
 
 DoHeatmap(oculina_named_new, features = top10_lev_new$gene,label=F, group.colors = cols) + theme(axis.text.y= element_text(size=0)) + scale_fill_gradientn(colors=color)
-#saved as top10_releveled_named_091724 as landscape 9x6
+#saved as top10_releveled_named_091824 as landscape 9x6
 
 DoHeatmap(oculina_named_new, features = top20_lev_new$gene,label=F, group.colors = cols) + theme(axis.text.y= element_text(size=0)) + scale_fill_gradientn(colors=color)
-#saved as top20_releveled_named_091724 as landscape 9x6
+#saved as top20_releveled_named_091824 as landscape 9x6
 ```
 
 ###analyze specific cell clusters
 
 Gastrodermis 1 #####COME BACK
 ```{r}
-gderm1 <- subset(oculina_named_h, idents = "Gastrodermis 1") 
+gderm1 <- subset(oculina_named_new, idents = "Gastrodermis 1") 
 
 gderm1 <- FindVariableFeatures(gderm1)
-gderm1 <- ScaleData(gderm1, features = rownames(gderm1@assays$RNA@features))
+gderm1 <- ScaleData(gderm1, features = features_to_scale)
 gderm1 <- RunPCA(gderm1)
 gderm1 <- FindNeighbors(gderm1, dims = 1:30, reduction = "pca")
 gderm1 <- FindClusters(gderm1, resolution = 0.25)
-#4 clusters
+#5 clusters
 gderm1 <- RunUMAP(gderm1, reduction="pca", dims=1:30, return.model=TRUE)
 
 #gderm1 <- RunUMAP(gderm1, dims = 1:30, reduction = "integrated.cca")
@@ -788,18 +803,18 @@ gderm1 <- RunUMAP(gderm1, reduction="pca", dims=1:30, return.model=TRUE)
 gderm1@meta.data$seurat_clusters <- as.numeric(as.character(gderm1@meta.data$seurat_clusters))+1
 Idents(gderm1)<- "seurat_clusters"
 gderm1$seurat_clusters
-gderm1@active.ident <- factor(x = gderm1@active.ident, levels = 1:4)
+gderm1@active.ident <- factor(x = gderm1@active.ident, levels = 1:5)
 gderm1@active.ident
 
-levels(gderm1) <- c("1","2","3","4")
+levels(gderm1) <- c("1","2","3","4", "5")
 
-plot5 <- DimPlot(gderm1, reduction = "umap", label = T, cols=c("#CC6699", "#33CC99", "#3333FF", "#FF9900"), alpha=0.5)
-#4 clusters
+plot5 <- DimPlot(gderm1, reduction = "umap", label = T, cols=c("#CC6699", "#33CC99", "#3333FF", "#FF9900", "gray40"), alpha=0.5)
+#5 clusters
 
 
 plot6 <- DimPlot(gderm1, reduction = "umap", label=F, order=c("sym", "apo"), group.by = "symstate", cols=c("gray40", "#CC6600"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
 
-plot6b <- DimPlot(gderm1, reduction = "umap", label=T, split.by = "symstate", cols=c("#CC6699", "#33CC99", "#3333FF", "#FF9900"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
+plot6b <- DimPlot(gderm1, reduction = "umap", label=T, split.by = "symstate", cols=c("#CC6699", "#33CC99", "#3333FF", "#FF9900", "gray50"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
 #NOW THINGS ARE IN THE RIGHT ORDER!!!!
 
 #saved as umap_gderm1_plot5plot6_new 9x4
@@ -912,7 +927,7 @@ gderm2 <- FindVariableFeatures(gderm2)
 gderm2 <- ScaleData(gderm2, features = features_to_scale)
 gderm2 <- RunPCA(gderm2)
 gderm2 <- FindNeighbors(gderm2, dims = 1:30, reduction = "pca")
-gderm2 <- FindClusters(gderm2, resolution = 0.5)
+gderm2 <- FindClusters(gderm2, resolution = 0.25)
 #3 cluster
 gderm2 <- RunUMAP(gderm2, reduction="pca", dims=1:30, return.model=TRUE)
 
@@ -921,13 +936,13 @@ gderm2 <- RunUMAP(gderm2, reduction="pca", dims=1:30, return.model=TRUE)
 gderm2@meta.data$seurat_clusters <- as.numeric(as.character(gderm2@meta.data$seurat_clusters))+1
 Idents(gderm2)<- "seurat_clusters"
 gderm2$seurat_clusters
-gderm2@active.ident <- factor(x = gderm2@active.ident, levels = 1:4)
+gderm2@active.ident <- factor(x = gderm2@active.ident, levels = 1:3)
 gderm2@active.ident
 
-levels(gderm2) <- c("1", "2", "3", "4")
+levels(gderm2) <- c("1", "2", "3")
 
-plot7 <- DimPlot(gderm2, reduction = "umap", label = T, cols=c("#CC6699", "#33CC99", "#3333FF", "#FF9900"), alpha=0.5)
-#4 clusters
+plot7 <- DimPlot(gderm2, reduction = "umap", label = T, cols=c("#CC6699", "#33CC99", "#3333FF"), alpha=0.5)
+#3 clusters
 
 
 plot8 <- DimPlot(gderm2, reduction = "umap", label=F, order=c("sym", "apo"), group.by = "symstate", cols=c("gray40", "#CC6600"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
@@ -938,6 +953,7 @@ plot8b <- DimPlot(gderm2, reduction = "umap", label=T, split.by = "symstate", co
 #umap_gderm2_plot8b_new 8x4 landscape
 
 #do the intersection between gderm2 cells and algal cells then dimplot them
+######## MAKE THE ALGAL CELLS ONLY THE ONES THAT EXPRESS SYMBIONT READS
 gderm2_cell_ids <- rownames(gderm2@meta.data)
 sym_gderm2_intersect <- intersect(gderm2_cell_ids, alga_cells)
 
@@ -974,7 +990,7 @@ map(paste0("PC_", 1:10), function(pc){
                 ggtitle(pc)
 }) %>% 
         plot_grid(plotlist = .)
-#saved as gderm2_pcplots_umap_091724
+#saved as gderm2_pcplots_umap_091824
 
 DimPlot(gderm2, reduction = "pca", label=F, order=c("sym", "apo"), group.by = "symstate", cols=alpha(c("gray40", "#CC6600"), 0.5))
 
@@ -982,16 +998,16 @@ stdev_gd2 <- Stdev(gderm2, reduction = "pca")
 
 pca_gd2 <- pc_data_gd2
 pca_gd2$sym_state <- gderm2@meta.data$symstate
-summary(aov(PC_1 ~ sym_state, data = pca_gd2)) #1.07e-05 ***
+summary(aov(PC_1 ~ sym_state, data = pca_gd2)) #2.32e-06 ***
 summary(aov(PC_2 ~ sym_state, data = pca_gd2)) #<2e-16 ***
-summary(aov(PC_3 ~ sym_state, data = pca_gd2)) #0.247
-summary(aov(PC_4 ~ sym_state, data = pca_gd2)) #2.81e-11 ***
-summary(aov(PC_5 ~ sym_state, data = pca_gd2)) #4.05e-08 ***                         
-summary(aov(PC_6 ~ sym_state, data = pca_gd2)) #0.0639 .
-summary(aov(PC_7 ~ sym_state, data = pca_gd2)) #0.0765 .
-summary(aov(PC_8 ~ sym_state, data = pca_gd2)) #0.00169 **
-summary(aov(PC_9 ~ sym_state, data = pca_gd2)) #0.0239 *
-summary(aov(PC_10 ~ sym_state, data = pca_gd2)) #0.0917 .
+summary(aov(PC_3 ~ sym_state, data = pca_gd2)) #0.891
+summary(aov(PC_4 ~ sym_state, data = pca_gd2)) #0.178
+summary(aov(PC_5 ~ sym_state, data = pca_gd2)) #8.21e-07 ***                        
+summary(aov(PC_6 ~ sym_state, data = pca_gd2)) #0.0166 *
+summary(aov(PC_7 ~ sym_state, data = pca_gd2)) #0.0148 *
+summary(aov(PC_8 ~ sym_state, data = pca_gd2)) #1.78e-09 ***
+summary(aov(PC_9 ~ sym_state, data = pca_gd2)) #0.86
+summary(aov(PC_10 ~ sym_state, data = pca_gd2)) #0.428
 
 print(gderm2[["pca"]], dims = 1:5, nfeatures = 10)
 
@@ -1017,8 +1033,6 @@ gderm2_markers_subclust <- FindAllMarkers(gderm2,
 gderm2_markers_subclust
 gderm2_markers_subclust <- rownames_to_column(gderm2_markers_subclust, var="gene_symbol")
 
-#I could do findmarkers to define the difference between the algal-hosting cells and the other gderm2 cells
-
 # also do some feature plots with the immunity and nutrition genes
 catl.9_feat_plot_g2 <- FeaturePlot(gderm2, features=c("CATL.9"), split.by = "symstate", order = TRUE, reduction="umap",  min.cutoff = 2) + theme(legend.position = c(0.98,0.98))
 catl.7_feat_plot_g2 <- FeaturePlot(gderm2, features=c("CATL.7"), split.by = "symstate", order = TRUE, reduction="umap",  min.cutoff = 2) + theme(legend.position = c(0.98,0.98))
@@ -1028,6 +1042,63 @@ h90_feat_plot_g2 <- FeaturePlot(gderm2, features=c("H90A1"), split.by = "symstat
 glsn_feat_plot_g2 <- FeaturePlot(gderm2, features=c("GLSN"), split.by = "symstate", order = TRUE, reduction="umap",  min.cutoff = 1) + theme(legend.position = c(0.98,0.98))
 aplp_feat_plot_g2 <- FeaturePlot(gderm2, features=c("APLP"), split.by = "symstate", order = TRUE, reduction="umap",  min.cutoff = 3) + theme(legend.position = c(0.98,0.98))
 apoB1_feat_plot_g2 <- FeaturePlot(gderm2, features=c("APOB.1"), split.by = "symstate", order = TRUE, reduction="umap",  min.cutoff = 3) + theme(legend.position = c(0.98,0.98))
+dhe4_feat_plot_g2 <- FeaturePlot(gderm2, features=c("DHE4"), split.by = "symstate", order = TRUE, reduction="umap",  min.cutoff = 2) + theme(legend.position = c(0.98,0.98))
+
+
+
+
+#get the top10 from the gderm2
+gd2_markers_lvld_new<- FindAllMarkers(gderm2, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
+nrow(gd2_markers_lvld_new)
+#454
+
+gd2_markers_lvld_new %>% group_by(cluster) %>% top_n(10, avg_log2FC) -> top10_gd2
+top10_gd2
+nrow(top10_gd2)
+#34 bc cluster 4 only has 4
+
+DoHeatmap(gderm2, features = top10_gd2$gene,label=F, group.colors = c("#CC6699", "#33CC99", "#3333FF", "#FF9900")) + theme(axis.text.y= element_text(size=0)) + scale_fill_gradientn(colors=color)
+#cluster 4 has most similar expression to cluster 2, which are entirely ribosomal proteins (RLs), then the tbbs in cluster 4 are super specific to cluster 4
+
+rl10_feat_plot_g2 <- FeaturePlot(gderm2, features=c("RL10"), split.by = "symstate", order = TRUE, reduction="umap") + theme(legend.position = c(0.98,0.98)) # some expression in algal-hosters
+
+rl18a_feat_plot_g2 <- FeaturePlot(gderm2, features=c("RL18A"), split.by = "symstate", order = TRUE, reduction="umap") + theme(legend.position = c(0.98,0.98)) # some expression in algal-hosters
+
+entp5_feat_plot_g2 <- FeaturePlot(gderm2, features=c("ENTP5"), split.by = "symstate", order = TRUE, reduction="umap") + theme(legend.position = c(0.98,0.98)) # ectonucleoside triphosphate diphosphohydrolase 5; some expression
+
+
+#look at features that define gderm2 from all the other clusters and see what is highly expressed across all subclusters
+nfat5_feat_plot_g2 <- FeaturePlot(gderm2, features=c("NFAT5.4"), split.by = "symstate", order = TRUE, reduction="umap") + theme(legend.position = c(0.98,0.98)) #cluster 4 excluded
+
+evm1_feat_plot_g2 <- FeaturePlot(gderm2, features=c("evm.TU.Ap3.1250.evm.TU.Ap3.1253"), split.by = "symstate", order = TRUE, reduction="umap") + theme(legend.position = c(0.98,0.98)) #nope
+
+tie2_feat_plot_g2 <- FeaturePlot(gderm2, features=c("TIE2"), split.by = "symstate", order = TRUE, reduction="umap") + theme(legend.position = c(0.98,0.98))
+
+evm2_feat_plot_g2 <- FeaturePlot(gderm2, features=c("evm.TU.Ap3.1276.evm.TU.Ap3.1281"), split.by = "symstate", order = TRUE, reduction="umap") + theme(legend.position = c(0.98,0.98)) # naur
+
+wdr41_feat_plot_g2 <- FeaturePlot(gderm2, features=c("WDR41"), split.by = "symstate", order = TRUE, reduction="umap") + theme(legend.position = c(0.98,0.98)) # naur
+
+aplp_feat_plot_g2 <- FeaturePlot(gderm2, features=c("APLP"), split.by = "symstate", order = TRUE, reduction="umap") + theme(legend.position = c(0.98,0.98)) #nah
+
+s6a13_feat_plot_g2 <- FeaturePlot(gderm2, features=c("S6A13"), split.by = "symstate", order = TRUE, reduction="umap") + theme(legend.position = c(0.98,0.98)) #nah
+
+s6a13_feat_plot_g2 <- FeaturePlot(gderm2, features=c("S6A13"), split.by = "symstate", order = TRUE, reduction="umap") + theme(legend.position = c(0.98,0.98)) 
+
+##there's gottta be a better way to do this
+# let's take the list of markers for gderm2, then heatmap them within gderm2
+markers_strong_2 <- markers_strong[717:1414, ]
+
+DoHeatmap(gderm2, features = markers_strong_2$gene,label=T, group.colors = c("#CC6699", "#33CC99", "#3333FF", "#FF9900")) + theme(axis.text.y= element_text(size=0)) + scale_fill_gradientn(colors=color) # not really any clearer
+
+gderm2_clustertree <- BuildClusterTree(object = gderm2)
+PlotClusterTree(object = gderm2_clustertree)
+
+### have to think of a technical justification for why I removed cells with high symbiont:host count ratios (or a way to better say that the symbiont reads were fucking with the data)
+
+#at this stage, have a list of cells assigned as "algal-hosting" and that are in gderm2
+#in gderm2, I'm going to "calculate the percentage of all the counts belonging to a subset [host genes] of the possible features for each cell"
+gderm_host_percent <- PercentageFeatureSet(gderm2, col.name = "host_percent", features = rownames(counts_lim))
+#okay this is going to have to be done earlier before I remove the symbiont reads
 
 ################# HAVEN'T DONE BELOW YET
 #get apo vs sym differences for subcluster 1 of gderm1
