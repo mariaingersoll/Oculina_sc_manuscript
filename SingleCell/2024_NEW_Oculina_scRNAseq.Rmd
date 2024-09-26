@@ -751,7 +751,16 @@ LabelClusters(plot1, id = "ident", size = 3, repel = T,  box.padding = 0.25, fon
 plot2 <- DimPlot(oculina_named_new, reduction = "umap", label=F,  shuffle=TRUE, group.by = "symstate", cols=c("gray40", "#CC6600"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
 #umap_oculina_aposym_091824 as landscape 6.5x5.5
 
+#make a new seurat with 1 added to the counts that you can mess around with
+oc_diff <- oculina_named_new
+DefaultAssay(oc_diff) <- "RNA"
+oc_diff[["RNA"]]$counts<-as.matrix(oc_diff[["RNA"]]$counts)+1
 
+oc_full_aposym_mark <- FindMarkers(oc_diff, ident.1 = "sym", ident.2="apo", group.by = "symstate", test.use="DESeq2", slot = "counts")
+head(oc_full_aposym_mark)
+#i mean you could do go term enrichment and stuff on this; then it's like internal
+
+oc_full_aposym_mark <- rownames_to_column(oc_full_aposym_mark, var="gene_symbol")
 ```
 
 Reread about comparative analysis for calicoblast
@@ -859,15 +868,15 @@ stdev_gd1 <- Stdev(gderm1, reduction = "pca")
 pca_gd1 <- pc_data_gd1
 pca_gd1$sym_state <- gderm1@meta.data$symstate
 summary(aov(PC_1 ~ sym_state, data = pca_gd1)) #<2e-16 *** 
-summary(aov(PC_2 ~ sym_state, data = pca_gd1)) #0.00547 **
+summary(aov(PC_2 ~ sym_state, data = pca_gd1)) #0.89
 summary(aov(PC_3 ~ sym_state, data = pca_gd1)) #<2e-16 ***
-summary(aov(PC_4 ~ sym_state, data = pca_gd1)) #2.09e-10 ***
+summary(aov(PC_4 ~ sym_state, data = pca_gd1)) #2.13e-11 ***
 summary(aov(PC_5 ~ sym_state, data = pca_gd1)) #<2e-16 ***                             
-summary(aov(PC_6 ~ sym_state, data = pca_gd1)) #3.1e-06 ***
-summary(aov(PC_7 ~ sym_state, data = pca_gd1)) #1.33e-12 ***
-summary(aov(PC_8 ~ sym_state, data = pca_gd1)) #<2e-16 ***
-summary(aov(PC_9 ~ sym_state, data = pca_gd1)) #0.53
-summary(aov(PC_10 ~ sym_state, data = pca_gd1)) #0.0118 *
+summary(aov(PC_6 ~ sym_state, data = pca_gd1)) #5.42e-10 ***
+summary(aov(PC_7 ~ sym_state, data = pca_gd1)) #0.991
+summary(aov(PC_8 ~ sym_state, data = pca_gd1)) #1.41e-08 ***
+summary(aov(PC_9 ~ sym_state, data = pca_gd1)) #0.323
+summary(aov(PC_10 ~ sym_state, data = pca_gd1)) #3.74e-05 ***
 
 print(gderm1[["pca"]], dims = 1:5, nfeatures = 10)
 
@@ -889,6 +898,10 @@ gderm1_markers_subclust <- FindAllMarkers(gderm1,
                           latent.vars = c('percent.mt', 'nFeature_RNA'))
 
 gderm1_markers_subclust
+
+myd88.2_feat_plot_g1 <- FeaturePlot(gderm1, features=c("MYD88.2"), split.by = "symstate", order = TRUE, reduction="umap",  min.cutoff = 1) + theme(legend.position = c(0.98,0.98)) #marker for cluster 3 but not very strong
+
+
 
 #get apo vs sym differences for subcluster 1 of gderm1
 gderm1_1 <- subset(gderm1, idents="1")
@@ -1034,10 +1047,16 @@ gderm2_markers_subclust
 gderm2_markers_subclust <- rownames_to_column(gderm2_markers_subclust, var="gene_symbol")
 
 # also do some feature plots with the immunity and nutrition genes
-catl.9_feat_plot_g2 <- FeaturePlot(gderm2, features=c("CATL.9"), split.by = "symstate", order = TRUE, reduction="umap",  min.cutoff = 2) + theme(legend.position = c(0.98,0.98))
-catl.7_feat_plot_g2 <- FeaturePlot(gderm2, features=c("CATL.7"), split.by = "symstate", order = TRUE, reduction="umap",  min.cutoff = 2) + theme(legend.position = c(0.98,0.98))
+catl.9_feat_plot_g2 <- FeaturePlot(gderm2, features=c("CATL.9"), split.by = "symstate", order = TRUE, reduction="umap",  min.cutoff = 1) + theme(legend.position = c(0.98,0.98))
+catl.7_feat_plot_g2 <- FeaturePlot(gderm2, features=c("CATL.7"), split.by = "symstate", order = TRUE, reduction="umap",  min.cutoff = 3) + theme(legend.position = c(0.98,0.98))
 catb.1_feat_plot_g2 <- FeaturePlot(gderm2, features=c("CATB.1"), split.by = "symstate", order = TRUE, reduction="umap",  min.cutoff = 2) + theme(legend.position = c(0.98,0.98))
-h90_feat_plot_g2 <- FeaturePlot(gderm2, features=c("H90A1"), split.by = "symstate", order = TRUE, reduction="umap",  min.cutoff = 2) + theme(legend.position = c(0.98,0.98))
+
+mmp24_feat_plot_g2 <- FeaturePlot(gderm2, features=c("MMP24"), split.by = "symstate", order = TRUE, reduction="umap",  min.cutoff = 3) + theme(legend.position = c(0.98,0.98))
+sodc_feat_plot_g2 <- FeaturePlot(gderm2, features=c("SODC.4"), split.by = "symstate", order = TRUE, reduction="umap",  min.cutoff = 2) + theme(legend.position = c(0.98,0.98))
+
+h90_feat_plot_g2 <- FeaturePlot(gderm2, features=c("H90A1"), split.by = "symstate", order = TRUE, reduction="umap",  min.cutoff = 3) + theme(legend.position = c(0.98,0.98))
+h90a_vln1_gderm2 <- VlnPlot(object =gderm2, features = c("H90A1"), pt.size= 0, layer="data", combine = F,assay = "RNA", group.by = "symstate", cols=c("gray40", "#CC6600"))
+h90a_vln2_gderm2 <- VlnPlot(object =gderm2, features = c("H90A1"), pt.size= 0,combine = F,assay = "RNA", split.by = "symstate", cols=c("gray40", "#CC6600"))
 
 glsn_feat_plot_g2 <- FeaturePlot(gderm2, features=c("GLSN"), split.by = "symstate", order = TRUE, reduction="umap",  min.cutoff = 1) + theme(legend.position = c(0.98,0.98))
 aplp_feat_plot_g2 <- FeaturePlot(gderm2, features=c("APLP"), split.by = "symstate", order = TRUE, reduction="umap",  min.cutoff = 3) + theme(legend.position = c(0.98,0.98))
@@ -1097,10 +1116,50 @@ PlotClusterTree(object = gderm2_clustertree)
 
 #at this stage, have a list of cells assigned as "algal-hosting" and that are in gderm2
 #in gderm2, I'm going to "calculate the percentage of all the counts belonging to a subset [host genes] of the possible features for each cell"
-gderm_host_percent <- PercentageFeatureSet(gderm2, col.name = "host_percent", features = rownames(counts_lim))
+#gderm_host_percent <- PercentageFeatureSet(gderm2, col.name = "host_percent", features = rownames(counts_lim))
 #okay this is going to have to be done earlier before I remove the symbiont reads
+```
 
-################# HAVEN'T DONE BELOW YET
+make a list of nf-kb response genes you're interested in
+```{r}
+#from oculina transcriptomics: TLR2, "TENR","TENR.11","TENR.18"
+# from oc_full_aposym_mark: CATL.9, H90A1, L2EFL.1, HSP71, MMP10, HSP16
+# from proteomics: "DLG1","DLG5", "TM175","TM175.1","TM175.2", VAMP1, VAMP4, VAMP7, DLG1, DLG5, "SFXN1", "CTRB","CTRB.3","CTRB.4","CTRB.6","CTRB.7","CTRB.8", "RAB6", "CRYAB", "LGMN", "PDXK", "PSMG2", "PLOD1", "PDIA4", "CATL","CATL.1","CATL.2","CATL.3","CATL.4","CATL.6","CATL.7","CATL.8", "PYG"
+
+symapo_imm <- c("TLR2", "TENR","TENR.11","TENR.18", "CATL.9", "H90A1", "L2EFL.1", "HSP71", "MMP10", "HSP16", "DLG1","DLG5", "TM175","TM175.1","TM175.2", "VAMP1", "VAMP4", "VAMP7", "DLG1", "DLG5", "SFXN1", "CTRB","CTRB.3","CTRB.4","CTRB.6","CTRB.7","CTRB.8", "RAB6", "CRYAB", "LGMN", "PDXK", "PSMG2", "PLOD1", "PDIA4", "CATL","CATL.1","CATL.2","CATL.3","CATL.4","CATL.6","CATL.7","CATL.8", "PYG")
+
+symapo_imm_df <- as.data.frame(symapo_imm)
+rownames_oc_new <- rownames(GetAssayData(oculina_named_new))
+rownames_oc_df <- as.data.frame(rownames_oc_new)
+#oc_new_overlap <- symapo_imm_df %>%
+#  left_join(rownames_oc_df, by = join_by(symapo_imm==rownames_oc_new))
+oc_new_overlap <- subset(symapo_imm_df, symapo_imm %in% rownames_oc_df$rownames_oc_new)
+
+oc_diff_2 <- PercentageFeatureSet(oculina_named_new, features = oc_new_overlap$symapo_imm, col.name = "NFKB_percent")
+oc_diff_2[["NFKB_perc_bin"]] <- ifelse(oc_diff_2[["NFKB_percent"]] > 2, ">2%", "<2%")
+
+nfkb_perc_bin <- DimPlot(oc_diff_2, reduction = "umap", group.by = "NFKB_perc_bin", cols=c("grey80", "blue"), split.by = "symstate", shuffle=TRUE)
+
+nfkb_perc_vln <- VlnPlot(oc_diff_2, features = "NFKB_percent", split.by = "symstate")
+
+###other immune
+other_imm <- c("ALPS", "ALPS.1", "CRYAB", "BCL2", "LBP.3", "LBP.1", "evm.TU.Ap10.801", "GBP6.6", "GBP6", "GBP6.2", "IRF1", "IRF2", "IRF2.1", "IRF2.2", "IRF2.3", "ATF3")
+
+other_imm_df <- as.data.frame(other_imm)
+oc_new_overlap_other <- subset(other_imm_df, other_imm %in% rownames_oc_df$rownames_oc_new)
+
+oc_diff_3 <- PercentageFeatureSet(oculina_named_new, features = oc_new_overlap_other$other_imm, col.name = "general_imm_percent")
+oc_diff_3[["general_imm_bin"]] <- ifelse(oc_diff_3[["general_imm_percent"]] > 1, ">1%", "<1%")
+
+general_imm_bin <- DimPlot(oc_diff_3, reduction = "umap", group.by = "general_imm_bin", cols=c("grey80", "blue"), split.by = "symstate", shuffle=TRUE)
+
+general_imm_vln <- VlnPlot(oc_diff_3, features = "general_imm_percent", split.by = "symstate")
+
+```
+
+
+```{r}
+################# HAVEN'T DONE BELOW YET, this is still for gderm2 tho
 #get apo vs sym differences for subcluster 1 of gderm1
 gderm3_1 <- subset(gderm3, idents="1")
 DefaultAssay(gderm3_1) <- "RNA"
