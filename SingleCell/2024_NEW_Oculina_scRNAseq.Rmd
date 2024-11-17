@@ -1128,6 +1128,8 @@ make a list of nf-kb response genes you're interested in
 
 symapo_imm <- c("TLR2", "TENR","TENR.11","TENR.18", "CATL.9", "H90A1", "L2EFL.1", "HSP71", "MMP10", "HSP16", "DLG1","DLG5", "TM175","TM175.1","TM175.2", "VAMP1", "VAMP4", "VAMP7", "DLG1", "DLG5", "SFXN1", "CTRB","CTRB.3","CTRB.4","CTRB.6","CTRB.7","CTRB.8", "RAB6", "CRYAB", "LGMN", "PDXK", "PSMG2", "PLOD1", "PDIA4", "CATL","CATL.1","CATL.2","CATL.3","CATL.4","CATL.6","CATL.7","CATL.8", "PYG")
 
+symapo_few_imm <- c("CATL.9", "H90A1", "L2EFL.1", "HSP71", "HSP16", "CRYAB",  "CATL","CATL.1","CATL.2","CATL.3","CATL.4","CATL.6","CATL.7","CATL.8")
+
 symapo_imm_df <- as.data.frame(symapo_imm)
 rownames_oc_new <- rownames(GetAssayData(oculina_named_new))
 rownames_oc_df <- as.data.frame(rownames_oc_new)
@@ -1138,7 +1140,15 @@ oc_new_overlap <- subset(symapo_imm_df, symapo_imm %in% rownames_oc_df$rownames_
 oc_diff_2 <- PercentageFeatureSet(oculina_named_new, features = oc_new_overlap$symapo_imm, col.name = "NFKB_percent")
 oc_diff_2[["NFKB_perc_bin"]] <- ifelse(oc_diff_2[["NFKB_percent"]] > 2, ">2%", "<2%")
 
-nfkb_perc_bin <- DimPlot(oc_diff_2, reduction = "umap", group.by = "NFKB_perc_bin", cols=c("grey80", "blue"), split.by = "symstate", shuffle=TRUE)
+oc_diff_15 <- PercentageFeatureSet(oculina_named_new, features = oc_new_overlap$symapo_few_imm, col.name = "NFKB_percent")
+oc_diff_15[["NFKB_perc_bin"]] <- ifelse(oc_diff_15[["NFKB_percent"]] > 1.5, ">1.5%", "<1.5%")
+
+oc_diff_3 <- PercentageFeatureSet(oculina_named_new, features = oc_new_overlap$symapo_imm, col.name = "NFKB_percent")
+oc_diff_3[["NFKB_perc_bin"]] <- ifelse(oc_diff_3[["NFKB_percent"]] > 3, ">3%", "<3%")
+
+nfkb_perc_bin <- DimPlot(oc_diff_2, reduction = "umap", group.by = "NFKB_perc_bin", cols=c("grey80", "blue"), split.by = "symstate", order=c(">2%","<2%"))
+
+nfkb_perc_cont <- FeaturePlot(oc_diff_2, reduction = "umap", features="NFKB_percent", order=TRUE, min.cutoff = 1.5, split.by = "symstate") + theme(legend.position = c(0.98,0.98)) 
 
 nfkb_perc_vln <- VlnPlot(oc_diff_2, features = "NFKB_percent", split.by = "symstate")
 
@@ -1151,7 +1161,7 @@ oc_new_overlap_other <- subset(other_imm_df, other_imm %in% rownames_oc_df$rowna
 oc_diff_3 <- PercentageFeatureSet(oculina_named_new, features = oc_new_overlap_other$other_imm, col.name = "general_imm_percent")
 oc_diff_3[["general_imm_bin"]] <- ifelse(oc_diff_3[["general_imm_percent"]] > 1, ">1%", "<1%")
 
-general_imm_bin <- DimPlot(oc_diff_3, reduction = "umap", group.by = "general_imm_bin", cols=c("grey80", "blue"), split.by = "symstate", shuffle=TRUE)
+general_imm_bin <- DimPlot(oc_diff_3, reduction = "umap", group.by = "general_imm_bin", cols=c("grey80", "blue"), split.by = "symstate", order=c(">1%", "<1%"))
 
 general_imm_vln <- VlnPlot(oc_diff_3, features = "general_imm_percent", split.by = "symstate")
 
@@ -1781,5 +1791,109 @@ Define features to scale for the real dealio
 ```{r}
 features_to_scale = rownames(obj.list_merge.only@assays$RNA@features)
 ```
+
+##################
+
+```{r}
+install_github('satijalab/seurat-wrappers')
+library("SeuratWrappers")
+
+devtools::install_github('cole-trapnell-lab/monocle3')
+library("monocle3")
+
+oculina.cds <- as.cell_data_set(oculina_named_new)
+oculina.cds <- cluster_cells(cds = oculina.cds, reduction_method = "UMAP")
+oculina.cds <- learn_graph(oculina.cds, use_partition = TRUE)
+plot_cells(oculina.cds,
+           color_cells_by = "cluster",
+           label_groups_by_cluster=FALSE,
+           label_leaves=TRUE,
+           label_branch_points=TRUE)
+
+plot_cells(oculina.cds, show_trajectory_graph = FALSE, color_cells_by = "partition")
+
+oculina.cds <- order_cells(oculina.cds, reduction_method = "UMAP")
+plot_cells(
+  cds = oculina.cds,
+  color_cells_by = "pseudotime",
+  show_trajectory_graph = TRUE
+)
+
+#split to sym only
+oculina_sym <- subset(oculina_named_new, subset = symstate == "sym")
+
+sym.cds <- as.cell_data_set(oculina_sym)
+sym.cds <- cluster_cells(cds = sym.cds, reduction_method = "UMAP")
+sym.cds <- learn_graph(sym.cds, use_partition = TRUE)
+sym_plot_cells <- plot_cells(sym.cds,
+           color_cells_by = "cluster",
+           label_groups_by_cluster=FALSE,
+           label_leaves=TRUE,
+           label_branch_points=TRUE)
+
+plot_cells(sym.cds, show_trajectory_graph = FALSE, color_cells_by = "partition")
+
+sym.cds <- order_cells(sym.cds, reduction_method = "UMAP")
+plot_cells(
+  cds = sym.cds,
+  color_cells_by = "pseudotime",
+  show_trajectory_graph = TRUE
+)
+
+#do apo only
+oculina_apo <- subset(oculina_named_new, subset = symstate == "apo")
+
+apo.cds <- as.cell_data_set(oculina_apo)
+apo.cds <- cluster_cells(cds = apo.cds, reduction_method = "UMAP")
+apo.cds <- learn_graph(apo.cds, use_partition = TRUE)
+apo_plot_cells <- plot_cells(apo.cds,
+           color_cells_by = "cluster",
+           label_groups_by_cluster=FALSE,
+           label_leaves=TRUE,
+           label_branch_points=TRUE)
+```
+
+Split to just gastrodermal cells
+```{r}
+gderm_all <- subset(oculina_named_new, idents = c("Gastrodermis 1", "Gastrodermis 2", "Gastrodermis 3", "Gastrodermis 4")) 
+
+gderm.cds <- as.cell_data_set(gderm_all)
+gderm.cds <- cluster_cells(cds = gderm.cds, reduction_method = "UMAP")
+gderm.cds <- learn_graph(gderm.cds, use_partition = TRUE)
+gderm_plot_cells <- plot_cells(gderm.cds,
+           color_cells_by = "cluster",
+           label_groups_by_cluster=FALSE,
+           label_leaves=TRUE,
+           label_branch_points=TRUE)
+
+gderm_all_sym <- subset(gderm_all, subset = symstate == "sym")
+gderm_sym.cds <- as.cell_data_set(gderm_all_sym)
+gderm_sym.cds <- cluster_cells(cds = gderm_sym.cds, reduction_method = "UMAP")
+gderm_sym.cds <- learn_graph(gderm_sym.cds, use_partition = TRUE)
+gderm_sym_plot_cells <- plot_cells(gderm_sym.cds,
+           color_cells_by = "cluster",
+           label_groups_by_cluster=FALSE,
+           label_leaves=TRUE,
+           label_branch_points=TRUE)
+
+gderm_sym.cds <- order_cells(gderm_sym.cds, reduction_method = "UMAP")
+plot_cells(
+  cds = gderm_sym.cds,
+  color_cells_by = "pseudotime",
+  show_trajectory_graph = TRUE
+)
+
+gderm_all_apo <- subset(gderm_all, subset = symstate == "apo")
+gderm_apo.cds <- as.cell_data_set(gderm_all_apo)
+gderm_apo.cds <- cluster_cells(cds = gderm_apo.cds, reduction_method = "UMAP")
+gderm_apo.cds <- learn_graph(gderm_apo.cds, use_partition = TRUE)
+gderm_apo_plot_cells <- plot_cells(gderm_apo.cds,
+           color_cells_by = "cluster",
+           label_groups_by_cluster=FALSE,
+           label_leaves=TRUE,
+           label_branch_points=TRUE)
+```
+
+
 
 
