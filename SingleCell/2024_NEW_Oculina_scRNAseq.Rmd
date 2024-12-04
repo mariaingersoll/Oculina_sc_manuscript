@@ -1855,11 +1855,11 @@ apo_plot_cells <- plot_cells(apo.cds,
 
 Split to just gastrodermal cells
 ```{r}
-gderm_all <- subset(oculina_named_new, idents = c("Gastrodermis 1", "Gastrodermis 2", "Gastrodermis 3", "Gastrodermis 4")) 
+gderm_all <- subset(oculina_named_new, idents = c("Gastrodermis 1", "Gastrodermis 2", "Gastrodermis 3")) 
 
 gderm.cds <- as.cell_data_set(gderm_all)
 gderm.cds <- cluster_cells(cds = gderm.cds, reduction_method = "UMAP")
-gderm.cds <- learn_graph(gderm.cds, use_partition = TRUE)
+gderm.cds <- learn_graph(gderm.cds, use_partition = FALSE)
 gderm_plot_cells <- plot_cells(gderm.cds,
            color_cells_by = "cluster",
            label_groups_by_cluster=FALSE,
@@ -1869,9 +1869,9 @@ gderm_plot_cells <- plot_cells(gderm.cds,
 gderm_all_sym <- subset(gderm_all, subset = symstate == "sym")
 gderm_sym.cds <- as.cell_data_set(gderm_all_sym)
 gderm_sym.cds <- cluster_cells(cds = gderm_sym.cds, reduction_method = "UMAP")
-gderm_sym.cds <- learn_graph(gderm_sym.cds, use_partition = TRUE)
+gderm_sym.cds <- learn_graph(gderm_sym.cds, use_partition = FALSE)
 gderm_sym_plot_cells <- plot_cells(gderm_sym.cds,
-           color_cells_by = "cluster",
+           color_cells_by = "ident",
            label_groups_by_cluster=FALSE,
            label_leaves=TRUE,
            label_branch_points=TRUE)
@@ -1886,9 +1886,9 @@ plot_cells(
 gderm_all_apo <- subset(gderm_all, subset = symstate == "apo")
 gderm_apo.cds <- as.cell_data_set(gderm_all_apo)
 gderm_apo.cds <- cluster_cells(cds = gderm_apo.cds, reduction_method = "UMAP")
-gderm_apo.cds <- learn_graph(gderm_apo.cds, use_partition = TRUE)
+gderm_apo.cds <- learn_graph(gderm_apo.cds, use_partition = FALSE)
 gderm_apo_plot_cells <- plot_cells(gderm_apo.cds,
-           color_cells_by = "cluster",
+           color_cells_by = "ident",
            label_groups_by_cluster=FALSE,
            label_leaves=TRUE,
            label_branch_points=TRUE)
