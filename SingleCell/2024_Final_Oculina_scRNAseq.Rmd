@@ -764,95 +764,15 @@ go_input_full2 <- go_input_full2[, c(2, 1)]
 write.csv(go_input_full2, file="./files/go_input_full2.csv", quote=F, row.names=FALSE)
 
 head(annotations)
-#running the apoculata_proteins.fasta through eggnog mapper to get more complete GO terms -> astrangia2024.emapper.iso2go.txt
-
-#CC just to make sure it all works
-input="go_input_full2.csv"
-goAnnotations="astrangia2024.emapper.iso2go.txt"
-goDatabase="go.obo"
-goDivision="CC"
-source("gomwu.functions.R")
-
-gomwuStats(input, goDatabase, goAnnotations, goDivision,
-	perlPath="perl",
-	largest=0.1,  
-	smallest=5,  
-	clusterCutHeight=0.25,
-)
-
-#231
-
-results=gomwuPlot(input,goAnnotations,goDivision,
-	absValue=1,
-	level1=0.1, 
-	level2=0.05,
-	level3=0.01,
-	txtsize=1.2,
-	treeHeight=0.5, 
-)
-
-#BP
-input="go_input_full2.csv"
-goAnnotations="astrangia2024.emapper.iso2go.txt"
-goDatabase="go.obo"
-goDivision="BP"
-source("gomwu.functions.R")
-
-gomwuStats(input, goDatabase, goAnnotations, goDivision,
-	perlPath="perl",
-	largest=0.1,  
-	smallest=5,  
-	clusterCutHeight=0.25,
-)
-
-#846 
-
-results=gomwuPlot(input,goAnnotations,goDivision,
-	absValue=1,
-	level1=0.1, 
-	level2=0.05,
-	level3=0.01,
-	txtsize=1.2,
-	treeHeight=0.5, 
-)
-#go_input_full_bp as portrait 100x10
 ```
 
-NOT THIS WAY: -doing it with the GO_swiss_prot from the annotations (apoculata_GeneAnnotation_combined.txt) file 
-```{r}
-#BP
-input="go_input_full2.csv"
-goAnnotations="apoculata_swissprot_iso2go.txt"
-goDatabase="go.obo"
-goDivision="BP"
-source("gomwu.functions.R")
-
-gomwuStats(input, goDatabase, goAnnotations, goDivision,
-	perlPath="perl",
-	largest=0.1,  
-	smallest=5,  
-	clusterCutHeight=0.25,
-)
-
-#846
-
-results=gomwuPlot(input,goAnnotations,goDivision,
-	absValue=1,
-	level1=0.1, 
-	level2=0.05,
-	level3=0.01,
-	txtsize=1.2,
-	treeHeight=0.5, 
-)
-#go_input_full_bp_swiss as portrait 50x10
-```
-
+GO TO SCRIPT GO_MWU_for_SC_Oculina TO RUN GO MWU ANALYSES
 
 6. Explore GO terms of interest
 
 Reformat GO BP output tables
 ```{r}
-go_bp_all <- read.csv("./MWU_BP_go_input_full2.csv", header=TRUE, sep=" ")
+go_bp_all <- read.csv("./files/MWU_BP_go_input_full2.csv", header=TRUE, sep=" ")
 head(go_bp_all)
 write.table(go_bp_all, "./files/MWU_BP_go_input_full2.txt", quote=F, sep="\t", row.names=FALSE)
 ```
@@ -862,7 +782,7 @@ Now filter your GO BP files for the GO terms of interest
 
 SWISS: GO:1901222|GO:0007249|GO:0043124|GO:1901223
 ```{r}
-bp_all = read.csv("./BP_go_input_full2.csv", sep="\t")
+bp_all = read.csv("./files/BP_go_input_full2.csv", sep="\t")
 head(bp_all)
 colnames(bp_all)[4]="gene_ID"
 bp_all <- bp_all %>%
@@ -1222,7 +1142,6 @@ gderm1_feats_bar_sort <- ggplot(data=gderm1_feats2go2cog, aes(y=factor(gene_symb
 
 look at GO terms for each of the PC driver genes
 
-
 ```{r}
 go_input_gderm1 = gderm1_mark %>%
   mutate(mutated_p = -log(p_val)) %>%
@@ -1242,68 +1161,14 @@ nrow(go_input_gderm1.2)
 colnames(go_input_gderm1.2) <- c("pval", "gene")
 head(go_input_gderm1.2)
 go_input_gderm1.2 <- go_input_gderm1.2[, c(2, 1)]
-write.csv(go_input_gderm1.2, file="./go_input_gderm1.2.csv", quote=F, row.names=FALSE)
-
-#BP
-input="go_input_gderm1.2.csv"
-goAnnotations="astrangia2024.emapper.iso2go.txt"
-goDatabase="go.obo"
-goDivision="BP"
-source("gomwu.functions.R")
-
-gomwuStats(input, goDatabase, goAnnotations, goDivision,
-	perlPath="perl",
-	largest=0.1,  
-	smallest=5,  
-	clusterCutHeight=0.25,
-)
-
-#316
-
-results=gomwuPlot(input,goAnnotations,goDivision,
-	absValue=1,
-	level1=0.1, 
-	level2=0.05,
-	level3=0.01,
-	txtsize=1.2,
-	treeHeight=0.5, 
-)
-#go_gderm1_bp as portrait 50x10
+write.csv(go_input_gderm1.2, file="./files/go_input_gderm1.2.csv", quote=F, row.names=FALSE)
 ```
 
-try with the swissprot GO terms NAHHH
-```{r}
-#BP
-input="go_input_gderm1.2.csv"
-goAnnotations="apoculata_swissprot_iso2go.txt"
-goDatabase="go.obo"
-goDivision="BP"
-source("gomwu.functions.R")
-
-gomwuStats(input, goDatabase, goAnnotations, goDivision,
-	perlPath="perl",
-	largest=0.1,  
-	smallest=5,  
-	clusterCutHeight=0.25,
-)
-
-#316
-
-results=gomwuPlot(input,goAnnotations,goDivision,
-	absValue=1,
-	level1=0.1, 
-	level2=0.05,
-	level3=0.01,
-	txtsize=1.2,
-	treeHeight=0.5, 
-)
-#go_gderm1_bp_swiss as portrait 20x10 still not great; could highlight what genes are involved in immune processes from the pc feats
-```
-
+GO TO SCRIPT GO_MWU_for_SC_Oculina
 
 Reformat GO BP output tables
 ```{r}
-go_bp_gderm1 <- read.csv("./MWU_BP_go_input_gderm1.2.csv", header=TRUE, sep=" ")
+go_bp_gderm1 <- read.csv("./files/MWU_BP_go_input_gderm1.2.csv", header=TRUE, sep=" ")
 head(go_bp_gderm1)
 write.table(go_bp_gderm1, "./files/MWU_BP_go_input_gderm1.2.txt", quote=F, sep="\t", row.names=FALSE)
 ```
@@ -1311,7 +1176,7 @@ write.table(go_bp_gderm1, "./files/MWU_BP_go_input_gderm1.2.txt", quote=F, sep="
 terms with "antigen" (GO:0002474|GO:0002479|GO:0042590) or "immune" (GO:0002263;GO:0002274;GO:0002275;GO:0002366;GO:0002283;GO:0042119;GO:0036230;GO:0002443;GO:0002444;GO:0002446;GO:0043299;GO:0043312|	
 GO:0002429;GO:0002768)
 ```{r}
-bp_gderm1 = read.csv("./BP_go_input_gderm1.2.csv", sep="\t")
+bp_gderm1 = read.csv("./files/BP_go_input_gderm1.2.csv", sep="\t")
 head(bp_gderm1)
 colnames(bp_gderm1)[4]="gene_ID"
 bp_gderm1 <- bp_gderm1 %>%
@@ -1395,7 +1260,7 @@ plot8 <- DimPlot(gderm2, reduction = "umap", label=F, order=c("sym", "apo"), gro
 
 plot8b <- DimPlot(gderm2, reduction = "umap", label=T, split.by = "symstate", cols=c("#CC6699", "#33CC99", "#3333FF"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
 
-#saved as umap_gderm2_plot7plot8_new 9x4
+#saved as umap_gderm2_plot7plot8_new 8x3
 #umap_gderm2_plot8b_new 8x4 landscape
 ```
 
@@ -1557,34 +1422,9 @@ colnames(go_input_gderm2.2) <- c("pval", "gene")
 head(go_input_gderm2.2)
 go_input_gderm2.2 <- go_input_gderm2.2[, c(2, 1)]
 write.csv(go_input_gderm2.2, file="./go_input_gderm2.2.csv", quote=F, row.names=FALSE)
-
-#BP
-input="go_input_gderm2.2.csv"
-goAnnotations="astrangia2024.emapper.iso2go.txt"
-goDatabase="go.obo"
-goDivision="BP"
-source("gomwu.functions.R")
-
-gomwuStats(input, goDatabase, goAnnotations, goDivision,
-	perlPath="perl",
-	largest=0.1,  
-	smallest=5,  
-	clusterCutHeight=0.25,
-)
-
-#83
-
-results=gomwuPlot(input,goAnnotations,goDivision,
-	absValue=1,
-	level1=0.1, 
-	level2=0.05,
-	level3=0.01,
-	txtsize=1.2,
-	treeHeight=0.5, 
-)
-#go_gderm2_bp as portrait 20x15
 ```
 
+GO TO GO_MWU_for_SC_Oculina
 
 3. Gastrodermis 3 THIS ONE HAS RES OF 0.3
 ```{r}
@@ -1613,7 +1453,7 @@ plot10 <- DimPlot(gderm3, reduction = "umap", label=F, order=c("sym", "apo"), gr
 
 plot10b <- DimPlot(gderm3, reduction = "umap", label=T, split.by = "symstate", cols=c("#CC6699", "#33CC99"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
 
-#saved as umap_gderm3_plot9plot10_new 9x4
+#saved as umap_gderm3_plot9plot10_new 8x3
 #umap_gderm3_plot10b_new 8x4 landscape
 ```
 
@@ -1873,7 +1713,7 @@ plot14 <- DimPlot(IC, reduction = "umap", label=F, order=c("sym", "apo"), group.
 
 plot14b <- DimPlot(IC, reduction = "umap", label=T, split.by = "symstate", cols=c("#CC6699", "#33CC99", "#3333FF"), alpha=0.5) + ggtitle("") + theme(legend.text=element_text(size=10))
 
-#saved as umap_immune_plot13plot14_new 9x4
+#saved as umap_immune_plot13plot14_new 8x6
 #umap_immune_plot14b_new 8x4 landscape
 ```
 
@@ -2021,7 +1861,7 @@ nrow(top10_lev_im)
 immune_markers_lvld %>% group_by(cluster) %>% top_n(20, avg_log2FC) -> top20_lev_im
 
 top20_named_imm <- c("CYTB", "MLRP1.11", "CEBPB", "HYDMA", "THIO.1", "EF1D", "ACTC", "ACTC.3", "CO7A1.2", "EPHB1", "FBCD1.13", "CATL.3", "LIPR1.4", "ANGL7.7", "CO2", "CD109", "CO5A2.3", "TENR.11", "CSMD3.12", "DMBT1.3", "EFNB2.3", "TTC28.25", "TTC28.217", "DGKH", "ACAP3", "XKR6.7", "KLHL3.19", "Y1760.4", "EGFR.1", "SPD2B", "RTBS.7", "TTC28.39", "MSHA.21", "GPSM1.5", "TTC28.261", "Y4TJ")
-DoHeatmap(IC, features = top20_named_imm,label=T, group.colors = c("#CC6699", "#33CC99", "#3333FF")) + theme(axis.text.y= element_text(size=5)) + scale_fill_gradientn(colors=color)
+DoHeatmap(IC, features = top20_named_imm,label=T, group.colors = c("#CC6699", "#33CC99", "#3333FF")) + theme(axis.text.y= element_text(size=7)) + scale_fill_gradientn(colors=color)
 #saved as top20_immune_named_123124 as landscape 9x6
 
 ```
@@ -2789,7 +2629,7 @@ epi6_mark <- rownames_to_column(epi6_mark, var="gene_symbol")
 #no sig PCs
 ```
 
-12. Neuron 1 RES OF 0.3 ####HERE DEC 10!
+12. Neuron 1 RES OF 0.3
 ```{r}
 n1 <- subset(oculina_named_new, idents = "Neuron 1") 
 
@@ -4821,11 +4661,15 @@ gderm_sym.cds <- as.cell_data_set(gderm_all_sym)
 gderm_sym.cds <- cluster_cells(cds = gderm_sym.cds, reduction_method = "UMAP")
 gderm_sym.cds <- learn_graph(gderm_sym.cds, use_partition = FALSE)
 gderm_sym_plot_cells <- plot_cells(gderm_sym.cds,
+          cell_size = 0.85,
+          #alpha = 0.5,
            color_cells_by = "ident",
+          group_label_size = 3,
+          cell_stroke = 0,
            label_groups_by_cluster=FALSE,
            label_leaves=TRUE,
-           label_branch_points=TRUE)
-#saved as gderm_sym_trajectory as portrait 5x5
+           label_branch_points=TRUE) + scale_color_manual(values = c("#C7B8E6", "#957ACC", "#643DB2", "#330099")) + ggtitle("") + theme(legend.text=element_text(size=10))
+#saved as gderm_sym_trajectory as portrait 5x4
 
 #gderm_sym.cds <- order_cells(gderm_sym.cds, reduction_method = "UMAP")
 #plot_cells(
@@ -4839,11 +4683,15 @@ gderm_apo.cds <- as.cell_data_set(gderm_all_apo)
 gderm_apo.cds <- cluster_cells(cds = gderm_apo.cds, reduction_method = "UMAP")
 gderm_apo.cds <- learn_graph(gderm_apo.cds, use_partition = FALSE)
 gderm_apo_plot_cells <- plot_cells(gderm_apo.cds,
+           cell_size = 0.85,
+          #alpha = 0.5,
            color_cells_by = "ident",
+          group_label_size = 3,
+          cell_stroke = 0,
            label_groups_by_cluster=FALSE,
            label_leaves=TRUE,
-           label_branch_points=TRUE)
-#saved as gderm_apo_trajectory as portrait 5x5
+           label_branch_points=TRUE) + scale_color_manual(values = c("#C7B8E6", "#957ACC", "#643DB2", "#330099")) + ggtitle("") + theme(legend.text=element_text(size=10))
+#saved as gderm_apo_trajectory as portrait 5x4
 ```
 
 # Look at localization of nutrient genes of interest
@@ -4856,6 +4704,8 @@ gderm_apo_plot_cells <- plot_cells(gderm_apo.cds,
 #DHE4.1: avg_log2FC is -0.8721442 and p_val_adj is 1
 dhe4_feat_full <- FeaturePlot(oculina_named_new, reduction = "umap", features = c("DHE4"), order=TRUE,  split.by = "symstate") + theme(legend.position = c(0.98,0.98))
 #dhe4_full as 8x4 landscape
+dhe4_vln_full <- VlnPlot(object =oculina_named_new, features = c("DHE4"), pt.size= 0, layer="data", combine = F,assay = "RNA", split.by = "symstate", cols=c("gray40", "#CC6600"))
+#dhe4_vln_full landscape 8x3
 
 #in gderm1
 #using slot/layer = data, which is the normalized data ("Feature counts for each cell are divided by the total counts for that cell and multiplied by the scale.factor. This is then natural-log transformed using log1p")
@@ -4896,12 +4746,18 @@ dhe4_vln3_gderm2 <- VlnPlot(object =gderm2, features = c("DHE4"), pt.size= 0,com
 
 apob_feat_full <- FeaturePlot(oculina_named_new, reduction = "umap", features = c("APOB"), order=TRUE,  split.by = "symstate") + theme(legend.position = c(0.98,0.98))
 #apob_full as 8x4 landscape
+apob_vln_full <- VlnPlot(object =oculina_named_new, features = c("APOB"), pt.size= 0, layer="data", combine = F,assay = "RNA", split.by = "symstate", cols=c("gray40", "#CC6600"))
+#apob_vln_full
 
 apob1_feat_full <- FeaturePlot(oculina_named_new, reduction = "umap", features = c("APOB.1"), order=TRUE,  split.by = "symstate", min.cutoff = 3) + theme(legend.position = c(0.98,0.98))
 #apob1_full_3min as 8x4 landscape
+apob1_vln_full <- VlnPlot(object =oculina_named_new, features = c("APOB.1"), pt.size= 0, layer="data", combine = F,assay = "RNA", split.by = "symstate", cols=c("gray40", "#CC6600"))
+#apob1_vln_full
 
 aplp_feat_full <- FeaturePlot(oculina_named_new, reduction = "umap", features = c("APLP"), order=TRUE,  split.by = "symstate", min.cutoff = 3) + theme(legend.position = c(0.98,0.98))
 #aplp_full_3min as 8x4 landscape
+aplp_vln_full <- VlnPlot(object =oculina_named_new, features = c("APLP"), pt.size= 0, layer="data", combine = F,assay = "RNA", split.by = "symstate", cols=c("gray40", "#CC6600"))
+#aplp_vln_full
 
 #gderm1 APOB
 apob_feat_gd1 <- FeaturePlot(gderm1, reduction = "umap", features = c("APOB"), order=TRUE,  split.by = "symstate") + theme(legend.position = c(0.98,0.98))
@@ -4978,6 +4834,8 @@ aplp_vln3_gderm2 <- VlnPlot(object =gderm2, features = c("APLP"), pt.size= 0,com
 
 glsn_feat_full <- FeaturePlot(oculina_named_new, reduction = "umap", features = c("GLSN"), order=TRUE,  split.by = "symstate", min.cutoff = 1) + theme(legend.position = c(0.98,0.98))
 #glsn_full as 8x4 landscape
+glsn_vln_full <- VlnPlot(object =oculina_named_new, features = c("GLSN"), pt.size= 0, layer="data", combine = F,assay = "RNA", split.by = "symstate", cols=c("gray40", "#CC6600"))
+#glsn_vln_full is marker for gderm 1 and 2 even tho it is still expressed in other cells
 
 #gderm1 GLSN
 glsn_feat_gd1 <- FeaturePlot(gderm1, reduction = "umap", features = c("GLSN"), order=TRUE,  split.by = "symstate", min.cutoff = 1) + theme(legend.position = c(0.98,0.98))
@@ -5013,6 +4871,9 @@ dhe4_apob1_gderm1_sym <- FeaturePlot(object = gderm1_sym, reduction="umap", feat
 #dhe4_apob1_gderm1_sym as 12x4
 #lots of coexpression in cluster 3
 
+dhe4_apob_gderm1_sym <- FeaturePlot(object = gderm1_sym, reduction="umap", features = c("DHE4", "APOB"), blend = TRUE, keep.scale = "feature", blend.threshold = 0.1,  cols=c("lightgrey", "#ff0000", "#3333ff"), order=TRUE)
+#dhe4_apob_gderm1_sym as 12x4
+
 dhe4_glsn_gderm1_sym <- FeaturePlot(object = gderm1_sym, reduction="umap", features = c("DHE4", "GLSN"), blend = TRUE, keep.scale = "feature", blend.threshold = 0.1,  cols=c("lightgrey", "#ff0000", "#3333ff"), order=TRUE)
 #dhe4_glsn_gderm1_sym as 12x4
 #again, lots of coexpression in cluster 3
@@ -5021,12 +4882,18 @@ apob1_glsn_gderm1_sym <- FeaturePlot(object = gderm1_sym, reduction="umap", feat
 #apob1_glsn_gderm1_sym as 12x4
 #samesies again
 
+apob_glsn_gderm1_sym <- FeaturePlot(object = gderm1_sym, reduction="umap", features = c("APOB", "GLSN"), blend = TRUE, keep.scale = "feature", blend.threshold = 0.1,  cols=c("lightgrey", "#ff0000", "#3333ff"), order=TRUE)
+#apob_glsn_gderm1_sym
+
 #gderm2
 gderm2_sym <- subset(gderm2, subset=symstate=="sym") 
 
 dhe4_apob1_gderm2_sym <- FeaturePlot(object = gderm2_sym, reduction="umap", features = c("DHE4", "APOB.1"), blend = TRUE, keep.scale = "feature", blend.threshold = 0.1,  cols=c("lightgrey", "#ff0000", "#3333ff"), order=TRUE)
 #dhe4_apob1_gderm2_sym as 12x4
 #some coexp in cluster 3
+
+dhe4_apob_gderm2_sym <- FeaturePlot(object = gderm2_sym, reduction="umap", features = c("DHE4", "APOB"), blend = TRUE, keep.scale = "feature", blend.threshold = 0.1,  cols=c("lightgrey", "#ff0000", "#3333ff"), order=TRUE)
+#dhe4_apob_gderm2_sym as 12x4
 
 dhe4_glsn_gderm2_sym <- FeaturePlot(object = gderm2_sym, reduction="umap", features = c("DHE4", "GLSN"), blend = TRUE, keep.scale = "feature", blend.threshold = 0.1,  cols=c("lightgrey", "#ff0000", "#3333ff"), order=TRUE)
 #dhe4_glsn_gderm2_sym as 12x4
@@ -5035,7 +4902,43 @@ dhe4_glsn_gderm2_sym <- FeaturePlot(object = gderm2_sym, reduction="umap", featu
 apob1_glsn_gderm2_sym <- FeaturePlot(object = gderm2_sym, reduction="umap", features = c("APOB.1", "GLSN"), blend = TRUE, keep.scale = "feature", blend.threshold = 0.1,  cols=c("lightgrey", "#ff0000", "#3333ff"), order=TRUE)
 #apob1_glsn_gderm2_sym as 12x4
 #samesies again
+
+apob_glsn_gderm2_sym <- FeaturePlot(object = gderm2_sym, reduction="umap", features = c("APOB", "GLSN"), blend = TRUE, keep.scale = "feature", blend.threshold = 0.1,  cols=c("lightgrey", "#ff0000", "#3333ff"), order=TRUE)
+#apob_glsn_gderm2_sym as 12x4
 ```
+
+checking the coexpression of these genes in other cell clusters
+```{r}
+epi1_sym <- subset(epi1, subset=symstate=="sym") 
+
+dhe4_apob_epi1_sym <- FeaturePlot(object = epi1_sym, reduction="umap", features = c("DHE4", "APOB"), blend = TRUE, keep.scale = "feature", blend.threshold = 0.1,  cols=c("lightgrey", "#ff0000", "#3333ff"), order=TRUE)
+#dhe4_apob_epi1_sym as 12x4
+
+dhe4_glsn_epi1_sym <- FeaturePlot(object = epi1_sym, reduction="umap", features = c("DHE4", "GLSN"), blend = TRUE, keep.scale = "feature", blend.threshold = 0.1,  cols=c("lightgrey", "#ff0000", "#3333ff"), order=TRUE)
+#dhe4_glsn_epi1_sym as 12x4
+
+apob_glsn_epi1_sym <- FeaturePlot(object = epi1_sym, reduction="umap", features = c("APOB", "GLSN"), blend = TRUE, keep.scale = "feature", blend.threshold = 0.1,  cols=c("lightgrey", "#ff0000", "#3333ff"), order=TRUE)
+#apob_glsn_epi1_sym
+
+#n1
+n1_sym <- subset(n1, subset=symstate=="sym") 
+
+dhe4_apob_n1_sym <- FeaturePlot(object = n1_sym, reduction="umap", features = c("DHE4", "APOB"), blend = TRUE, keep.scale = "feature", blend.threshold = 0.1,  cols=c("lightgrey", "#ff0000", "#3333ff"), order=TRUE)
+#dhe4_apob_n1_sym as 12x4
+
+dhe4_glsn_n1_sym <- FeaturePlot(object = n1_sym, reduction="umap", features = c("DHE4", "GLSN"), blend = TRUE, keep.scale = "feature", blend.threshold = 0.1,  cols=c("lightgrey", "#ff0000", "#3333ff"), order=TRUE)
+#dhe4_glsn_n1_sym as 12x4
+
+apob_glsn_n1_sym <- FeaturePlot(object = n1_sym, reduction="umap", features = c("APOB", "GLSN"), blend = TRUE, keep.scale = "feature", blend.threshold = 0.1,  cols=c("lightgrey", "#ff0000", "#3333ff"), order=TRUE)
+#apob_glsn_n1_sym
+
+#n6
+n6_sym <- subset(n6, subset=symstate=="sym") 
+dhe4_glsn_n6_sym <- FeaturePlot(object = n6_sym, reduction="umap", features = c("DHE4", "GLSN"), blend = TRUE, keep.scale = "feature", blend.threshold = 0.1,  cols=c("lightgrey", "#ff0000", "#3333ff"), order=TRUE)
+#dhe4_glsn_n6_sym as 12x4
+```
+
+
 
 # Starting in the 2022_Oculina_scRNAseq_V2.Rmd to follow the xenia orthologs
 1. reading in the xenia rds data and the ortholog data from broccoli step 3 (let's look at 	table_OGs_protein_names.txt)
@@ -5363,7 +5266,7 @@ ocsym_shared <- ocsym_shared %>%
   full_join(seq2iso2gene) %>%
   mutate(Fishers = if_else(is.na(Fishers), 0, 1)) %>%
   select(Protein_ID, Fishers)
-write.csv(ocsym_shared, file="ocsym_shared_GO.csv", quote=F, row.names=FALSE)
+write.csv(ocsym_shared, file="./files/ocsym_shared_GO.csv", quote=F, row.names=FALSE)
 ```
 
 Second: Xenia and Oculina gderm1/2 apo vs sym
@@ -5377,59 +5280,10 @@ gd_shared <- gd_shared %>%
   full_join(seq2iso2gene) %>%
   mutate(Fishers = if_else(is.na(Fishers), 0, 1)) %>%
   select(Protein_ID, Fishers)
-write.csv(gd_shared, file="gd1and2_shared_GO.csv", quote=F, row.names=FALSE)
+write.csv(gd_shared, file="./files/gd1and2_shared_GO.csv", quote=F, row.names=FALSE)
 ```
 
-Fishers
-```{r}
-### Start with the shared DEGs (only doing BP)
-# BP
-input="ocsym_shared_GO.csv"
-goAnnotations="astrangia2024.emapper.iso2go.txt"
-goDatabase="go.obo"
-goDivision="BP"
-source("gomwu.functions.R")
-
-gomwuStats(input, goDatabase, goAnnotations, goDivision,
-           perlPath="perl",
-           largest=0.1,
-           smallest=5,
-           clusterCutHeight=0.25)
-#31
-resultsBP=gomwuPlot(input,goAnnotations,goDivision,
-                    absValue=1,
-                    level1=0.1,
-                    level2=0.05,
-                    level3=0.01,
-                    txtsize=1.5,
-                    treeHeight=0.5,
-)
-#ocsym_shared_GO_fisherBP 10x8 landscape
-```
-
-```{r}
-input="gd1and2_shared_GO.csv"
-goAnnotations="astrangia2024.emapper.iso2go.txt"
-goDatabase="go.obo"
-goDivision="BP"
-source("gomwu.functions.R")
-
-gomwuStats(input, goDatabase, goAnnotations, goDivision,
-           perlPath="perl",
-           largest=0.1,
-           smallest=5,
-           clusterCutHeight=0.25)
-#40
-resultsBP=gomwuPlot(input,goAnnotations,goDivision,
-                    absValue=1,
-                    level1=0.1,
-                    level2=0.05,
-                    level3=0.01,
-                    txtsize=1.5,
-                    treeHeight=0.5,
-)
-#gd1and2_shared_GO_fisherBP 10x8 landscape
-```
+GO TO GO_MWU_for_SC_Oculina script
 
 Let's continue with the sym one (in sym only, gderm1/2 vers gderm3/4)
 Isolate the Oculina only DEOs for Fisher
@@ -5459,7 +5313,7 @@ fj_ocsym_only <- fj_ocsym_only %>%
   full_join(seq2iso2gene) %>%
   mutate(Fishers_oculina = if_else(is.na(Fishers_oculina), 0, 1)) %>%
   select(Protein_ID, Fishers_oculina)
-write.csv(fj_ocsym_only, file="ocsym_ONLY_GO.csv", quote=F, row.names=FALSE)
+write.csv(fj_ocsym_only, file="./files/ocsym_ONLY_GO.csv", quote=F, row.names=FALSE)
 
 
 fj_xen <- fj %>%
@@ -5476,7 +5330,7 @@ fj_xen_only <- fj_xen_only %>%
   full_join(xenia_id2sym2) %>%
   mutate(Fishers_xenia = if_else(is.na(Fishers_xenia), 0, 1)) %>%
   select(Protein_ID, Fishers_xenia)
-write.csv(fj_xen_only, file="xen_ONLY_GO.csv", quote=F, row.names=FALSE)
+write.csv(fj_xen_only, file="./files/xen_ONLY_GO.csv", quote=F, row.names=FALSE)
 
 #xenia genes of the shared bit
 ocsymXEN_shared <- as.data.frame(unique(intersect_xen_ocsym$gene_symbol_xenia))
@@ -5486,80 +5340,10 @@ ocsymXEN_shared <- ocsymXEN_shared %>%
   full_join(xenia_id2sym2) %>%
   mutate(Fishers = if_else(is.na(Fishers), 0, 1)) %>%
   select(Protein_ID, Fishers)
-write.csv(ocsymXEN_shared, file="ocsymXEN_shared_GO.csv", quote=F, row.names=FALSE)
+write.csv(ocsymXEN_shared, file="./files/ocsymXEN_shared_GO.csv", quote=F, row.names=FALSE)
 ```
 
-```{r}
-input="ocsym_ONLY_GO.csv"
-goAnnotations="astrangia2024.emapper.iso2go.txt"
-goDatabase="go.obo"
-goDivision="BP"
-source("gomwu.functions.R")
-
-gomwuStats(input, goDatabase, goAnnotations, goDivision,
-           perlPath="perl",
-           largest=0.1,
-           smallest=5,
-           clusterCutHeight=0.25)
-#92
-resultsBP=gomwuPlot(input,goAnnotations,goDivision,
-                    absValue=1,
-                    level1=0.1,
-                    level2=0.05,
-                    level3=0.01,
-                    txtsize=1.5,
-                    treeHeight=0.5,
-)
-#ocsym_ONLY_GO_fisherBP 12x10 portrait #these could be supp tables mentioned in the text; this might all go in the supps
-```
-
-```{r}
-input="xen_ONLY_GO.csv"
-goAnnotations="xenia_emapper_iso2go.txt"
-goDatabase="go.obo"
-goDivision="BP"
-source("gomwu.functions.R")
-
-gomwuStats(input, goDatabase, goAnnotations, goDivision,
-           perlPath="perl",
-           largest=0.1,
-           smallest=5,
-           clusterCutHeight=0.25)
-#26
-resultsBP=gomwuPlot(input,goAnnotations,goDivision,
-                    absValue=1,
-                    level1=0.1,
-                    level2=0.05,
-                    level3=0.01,
-                    txtsize=1.5,
-                    treeHeight=0.5,
-)
-#xen_ONLY_GO_fisherBP as landscape 10x6 --> IMMUNE RESPONSE
-```
-
-```{r}
-input="ocsymXEN_shared_GO.csv"
-goAnnotations="xenia_emapper_iso2go.txt"
-goDatabase="go.obo"
-goDivision="BP"
-source("gomwu.functions.R")
-
-gomwuStats(input, goDatabase, goAnnotations, goDivision,
-           perlPath="perl",
-           largest=0.1,
-           smallest=5,
-           clusterCutHeight=0.25)
-#22
-resultsBP=gomwuPlot(input,goAnnotations,goDivision,
-                    absValue=1,
-                    level1=0.1,
-                    level2=0.05,
-                    level3=0.01,
-                    txtsize=1.5,
-                    treeHeight=0.5,
-)
-#ocsymXEN_shared_GO_fisherBP as landscape 10x6 
-```
+GO TO GO_MWU_for_SC_Oculina script
 
 Now finish the gd1and2 one (comparing apo and sym)
 ```{r}
@@ -5571,32 +5355,10 @@ gd1and2XEN_shared <- gd1and2XEN_shared %>%
   full_join(xenia_id2sym2) %>%
   mutate(Fishers = if_else(is.na(Fishers), 0, 1)) %>%
   select(Protein_ID, Fishers)
-write.csv(gd1and2XEN_shared, file="gd1and2XEN_shared_GO.csv", quote=F, row.names=FALSE)
+write.csv(gd1and2XEN_shared, file="./files/gd1and2XEN_shared_GO.csv", quote=F, row.names=FALSE)
 ```
 
-```{r}
-input="gd1and2XEN_shared_GO.csv"
-goAnnotations="xenia_emapper_iso2go.txt"
-goDatabase="go.obo"
-goDivision="BP"
-source("gomwu.functions.R")
-
-gomwuStats(input, goDatabase, goAnnotations, goDivision,
-           perlPath="perl",
-           largest=0.1,
-           smallest=5,
-           clusterCutHeight=0.25)
-#31
-resultsBP=gomwuPlot(input,goAnnotations,goDivision,
-                    absValue=1,
-                    level1=0.1,
-                    level2=0.05,
-                    level3=0.01,
-                    txtsize=1.5,
-                    treeHeight=0.5,
-)
-#gd1and2XEN_shared_GO_fisherBP as landscape 10x8 -->  response to interleukin−4
-```
+GO TO GO_MWU_for_SC_Oculina script
 
 ```{r}
 head(orthos_xen_05)
@@ -5624,7 +5386,7 @@ fj_gd1and2_only <- fj_gd1and2_only %>%
   full_join(seq2iso2gene) %>%
   mutate(Fishers_oculina = if_else(is.na(Fishers_oculina), 0, 1)) %>%
   select(Protein_ID, Fishers_oculina)
-write.csv(fj_gd1and2_only, file="fj_gd1and2_ONLY_GO.csv", quote=F, row.names=FALSE)
+write.csv(fj_gd1and2_only, file="./files/fj_gd1and2_ONLY_GO.csv", quote=F, row.names=FALSE)
 
 
 fj_gd_xen <- fj_gd %>%
@@ -5641,58 +5403,34 @@ fj_gd_xen_only <- fj_gd_xen_only %>%
   full_join(xenia_id2sym2) %>%
   mutate(Fishers_xenia = if_else(is.na(Fishers_xenia), 0, 1)) %>%
   select(Protein_ID, Fishers_xenia)
-write.csv(fj_gd_xen_only, file="fj_gd_xen_ONLY_GO.csv", quote=F, row.names=FALSE)
+write.csv(fj_gd_xen_only, file="./files/fj_gd_xen_ONLY_GO.csv", quote=F, row.names=FALSE)
 
 ```
 
+GO TO GO_MWU_for_SC_Oculina script
+
+Reformat Fishers BP output tables
 ```{r}
-input="fj_gd1and2_ONLY_GO.csv"
-goAnnotations="astrangia2024.emapper.iso2go.txt"
-goDatabase="go.obo"
-goDivision="BP"
-source("gomwu.functions.R")
+#oculina sym to apo
+gd_xen_only_go <- read.csv("./files/MWU_BP_fj_gd_xen_ONLY_GO.csv", header=TRUE, sep=" ")
+write.table(gd_xen_only_go, "./files/MWU_BP_fj_gd_xen_ONLY_GO.txt", quote=F, sep="\t", row.names=FALSE)
 
-gomwuStats(input, goDatabase, goAnnotations, goDivision,
-           perlPath="perl",
-           largest=0.1,
-           smallest=5,
-           clusterCutHeight=0.25)
-#56
-resultsBP=gomwuPlot(input,goAnnotations,goDivision,
-                    absValue=1,
-                    level1=0.1,
-                    level2=0.05,
-                    level3=0.01,
-                    txtsize=1.5,
-                    treeHeight=0.5,
-)
-#fj_gd1and2_ONLY_GO_fisherBP
+gd_gd_only_go <- read.csv("./files/MWU_BP_fj_gd1and2_ONLY_GO.csv", header=TRUE, sep=" ")
+write.table(gd_gd_only_go, "./files/MWU_BP_fj_gd1and2_ONLY_GO.txt", quote=F, sep="\t", row.names=FALSE)
+
+gd_shared_go <- read.csv("./files/MWU_BP_gd1and2XEN_shared_GO.csv", header=TRUE, sep=" ")
+write.table(gd_shared_go, "./files/MWU_BP_gd1and2XEN_shared_GO.txt", quote=F, sep="\t", row.names=FALSE)
+
+#oculina sym to gastro
+ocsym_xen_only_go <- read.csv("./files/MWU_BP_xen_ONLY_GO.csv", header=TRUE, sep=" ")
+write.table(ocsym_xen_only_go, "./files/MWU_BP_xen_ONLY_GO.txt", quote=F, sep="\t", row.names=FALSE)
+
+ocsym_ocsym_only_go <- read.csv("./files/MWU_BP_ocsym_ONLY_GO.csv", header=TRUE, sep=" ")
+write.table(ocsym_ocsym_only_go, "./files/MWU_BP_ocsym_ONLY_GO.txt", quote=F, sep="\t", row.names=FALSE)
+
+ocsym_shared_go <- read.csv("./files/MWU_BP_ocsymXEN_shared_GO.csv", header=TRUE, sep=" ")
+write.table(ocsym_shared_go, "./files/MWU_BP_ocsymXEN_shared_GO.txt", quote=F, sep="\t", row.names=FALSE)
 ```
-
-```{r}
-input="fj_gd_xen_ONLY_GO.csv"
-goAnnotations="xenia_emapper_iso2go.txt"
-goDatabase="go.obo"
-goDivision="BP"
-source("gomwu.functions.R")
-
-gomwuStats(input, goDatabase, goAnnotations, goDivision,
-           perlPath="perl",
-           largest=0.1,
-           smallest=5,
-           clusterCutHeight=0.25)
-#4
-resultsBP=gomwuPlot(input,goAnnotations,goDivision,
-                    absValue=1,
-                    level1=0.1,
-                    level2=0.05,
-                    level3=0.01,
-                    txtsize=1.5,
-                    treeHeight=0.5,
-)
-#fj_gd_xen_ONLY_GO_fisherBP
-```
-
 
 
 
