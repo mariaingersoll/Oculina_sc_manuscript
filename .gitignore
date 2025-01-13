@@ -7,3 +7,8 @@
 *.fastq.gz
 *.fasta
 *.rds
+dissim_*
+go.obo
+gomwu.functions.R
+gomwu_a.pl
+gomwu_b.pl
