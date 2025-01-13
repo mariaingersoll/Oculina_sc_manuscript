@@ -1,0 +1,39 @@
+#Adding the following to the broccoli proteomes
+apoculata_proteins.fasta
+S. pistillata Spis.genome.annotation.pep.longest.fa from http://spis.reefgenomics.org/download/
+xenia xenSp1.proteins.fa https://cmo.carnegiescience.edu/data
+Nematostella nematostella_protein.faa https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_932526225.1/
+Aiptasia v1.1 Aiptasia_genome_1.1_protein.faa http://aiptasia.reefgenomics.org/download/
+Dendronephthya gigantea Dgig_protein.faa https://www.ncbi.nlm.nih.gov/datasets/genome/GCA_004324835.1/
+Acropora digitifera Acropora_dig_protein.faa https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_000222465.1/
+Galaxea fascicularis gfas_1.0.proteins.fasta http://gfas.reefgenomics.org/download/
+Fungia sp. Fungia_scutaria_peptides_100.final.clstr.faa http://comparative.reefgenomics.org/datasets.html
+Goniastrea aspera gasp_1.0.proteins.fasta http://gasp.reefgenomics.org/download/
+Hydra vulgaris hydra2.0_genemodels.aa https://research.nhgri.nih.gov/hydra/download/?dl=aa
+Clytia hemisphaerica Chemisphaerica_full_nr_align.fasta http://marimba.obs-vlfr.fr/node/237573
+Aurelia aurita AUR21_r04_proteins.fa https://marinegenomics.oist.jp/aurelia_aurita/viewer/download?project_id=69
+
+
+#locally installed diamond in the directory broccoli
+[mingers@scc2 broccoli_proteomes]$ module load miniconda
+[mingers@scc2 broccoli_proteomes]$ conda create -n env-broccoli python=3.6 ete3
+[mingers@scc2 broccoli_proteomes]$ conda activate env-broccoli 
+(env-broccoli)[mingers@scc2 fastq_path]$ git clone https://github.com/rderelle/Broccoli.git
+(env-broccoli)[mingers@scc2 fastq_path]$ cd Broccoli/
+(env-broccoli)[mingers@scc2 Broccoli]$ conda install bioconda::fasttree
+(env-broccoli)[mingers@scc2 fastq_path]$ conda install bioconda::diamond
+#qsub run_broccoli
+#!/bin/bash -l
+
+#$-P coral
+#$-j y
+#$-N broccoli
+#$-l h_rt=24:00:00
+#$-pe omp 16
+
+
+module load miniconda
+conda activate env-broccoli
+python broccoli.py -dir ../broccoli_proteomes
+
+

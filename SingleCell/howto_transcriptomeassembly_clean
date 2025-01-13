@@ -1,0 +1,358 @@
+####DE NOVO ASSEMBLY FROM 10X DATA
+# trying trinity with just the R2s because those are where the cdna sequences are; the r1 files are just the barcode and umi for each read
+
+# Concatenate all the R2 reads
+
+[mingers@scc2 AAAT5WFHV]$ cat *_R2_001.fastq > all_R2.fastq
+
+# Move concatenated files into their own directory
+[mingers@scc2 AAAT5WFHV]$ mv all_R2.fastq ../transcriptome_assembly/concat_reads_R2
+
+# run sed_qsub to remove the :2 thing, as suggested here:
+# https://github.com/trinityrnaseq/trinityrnaseq/issues/1425
+# run trinity with single setting as qsub job:
+
+#!/bin/bash -l
+#$ -cwd # start job in submission directory
+#$ -N trinity_s # job name, anything you want
+#$ -l h_rt=24:00:00 #maximum run time
+#$ -l mem_per_core=16G
+#$ -pe omp 28
+#$ -m beas
+
+module load miniconda
+conda activate trinity
+module unload miniconda
+module load bowtie2/2.4.2
+module load salmon/1.1.0
+module load jellyfish/2.2.10
+module load samtools/1.10
+module load picard/2.25.2
+module load kallisto/0.43.0
+module load bowtie/1.2.2
+module load python2/2.7.16
+module load hisat2/2.2.0
+module unload python2
+module load python3/3.8.10
+module load blat/36x2
+module load subread/1.6.2
+module load gatk/4.2.0.0
+module load R/4.1.1
+module load star/2.7.9a
+module load rsem/1.3.1
+module load trinity/2.13.2
+module load trimmomatic
+
+Trinity --seqType fq --max_memory 500G --single allnew_R2.fastq --CPU 28 --trimmomatic --quality_trimming_params "ILLUMINACLIP:$TRIMMOMATIC_DIR/adapters/TruSeq3-PE-2.fa:2:30:10 SLIDINGWINDOW:4:5 LEADING:5 TRAILING:5 MINLEN:25" >> log_run.txt
+
+################
+# Remove short contigs (<300 bp) using noshort.pl
+[mingers@scc2 concat_reads_R2]$ grep '>' trinity_out_dir.Trinity.fasta | wc -l
+747405
+
+[mingers@scc2 concat_reads_R2]$ conda activate trinity
+(trinity)[mingers@scc2 concat_reads_R2]$ module load perl/5.28.1
+(trinity)[mingers@scc2 concat_reads_R2]$ module load bioperl
+(trinity)[mingers@scc2 concat_reads_R2]$ noshorts.pl trinity_out_dir.Trinity.fasta 300
+noshorts:
+retained:       436471
+discarded:      310934
+
+# Make database (ABCD) fasta file into BLAST dbs to remove symbiont contaminants
+(trinity)[mingers@scc2 concat_reads_R2]$ module load blast
+(trinity)[mingers@scc2 concat_reads_R2]$ cd db
+(trinity)[mingers@scc2 db]$ makeblastdb -in /projectnb/coral/MVI_Oculina/10X_22_ApV2/outs/fastq_path/transcriptome_assembly/concat_reads_R2/db/symABCD.fasta 
+-dbtype nucl
+
+# copy the noshorts.fasta transcriptome file into db directory
+
+### Split transcriptome into chucks to speed up blast using script splitFasta.pl (splits transcriptome into 120 files)
+# rename noshorts_trinity_out_dir.Trinity.fasta to noshorts_R2_trinity.fasta
+splitFasta.pl noshorts_R2_trinity.fasta 120
+
+# run blast array qsub:
+
+#!/bin/bash -l
+#$ -cwd # start job in submission directory
+#$ -N blast # job name, anything you want
+#$ -l h_rt=24:00:00 #maximum run time
+#$ -m beas
+#$ -pe omp 16
+#$ -t 1-120
+
+module load miniconda
+conda activate trinity
+module load perl/5.28.1
+module load bioperl
+module load blast
+
+inputs=($(ls subset{1..120}_*.fasta))
+taskinput=${inputs[$(($SGE_TASK_ID-1))]}
+
+tblastx -query $taskinput -db symABCD.fasta -evalue 1e-3 -num_threads $NSLOTS -max_target_seqs 5 -outfmt "7 qseqid sseqid sgi evalue bitscore score length nident mismatch positive qstart qend sstart send qframe staxids stitle" -out $taskinput.br
+
+#####################
+# cat to combine all the subset outputs
+
+(trinity)[mingers@scc2 db]$ cat subset*br > out_blastR2.br
+(trinity)[mingers@scc2 db]$ grep 'TRINITY' out_blastR2.br | wc -l
+7658924
+
+# remove header lines from the blast result file
+(trinity)[mingers@scc2 db$] grep -E -v '^#' out_blastR2.br > out_blastR2_noheader.br
+
+### Parse the blast results to produce clean transcript file
+(trinity)[mingers@scc2 db]$ module load python2
+(trinity)[mingers@scc2 db]$ python sarahsblastparser.py 100 80 out_blastR2_noheader.br
+Number of blast matches parsed: 7222453
+Number of Good matches: 9899
+Highest EValue of a Match: 1.69e-24
+
+# output called out_blastR2_noheade_goodmatches.txt
+
+# pull out just the contigs from the good_matches file 
+(trinity)[mingers@scc2 db]$ cut -f 1 out_blastR2_noheade_goodmatches.txt > blastABCD_R2_contig_hits.txt 
+
+# but you also need a list of contigs that are not ABCD matches
+# here I'm trying to make a file "out_blastR2_host_goodmatches.txt" that are the host contigs that didn't match to the ABCD contigs
+(trinity)[mingers@scc2 db]$ grep -v -x -f out_blastR2_noheade_goodmatches.txt out_blastR2_noheader.br > out_blastR2_host_goodmatches.txt
+(trinity)[mingers@scc2 db]$ grep 'TRINITY' out_blastR2_host_goodmatches.txt | wc -l
+7212554
+
+(trinity)[mingers@scc2 db]$ cut -f 1 out_blastR2_host_goodmatches.txt > blastR2_contig_hits.txt
+
+# make the trinity header thing right
+(trinity)[mingers@scc2 db]$ awk '{print $1}' noshorts_R2_trinity.fasta > R2Trinity_clean.fasta
+
+# now you can run get_seq2.py
+(trinity)[mingers@scc2 db]$ python get_seq2.py R2Trinity_clean.fasta blastR2_contig_hits.txt hostR2_contigs_for16Sblast.fasta
+
+# Make blastdb for SILVA ino order to remove bacteria etc contaminants
+(trinity)[mingers@scc2 db]$ makeblastdb -in SILVA_SSU_LSU_combined.fasta -dbtype nucl
+
+#blast_silva qsub
+(trinity)[mingers@scc2 db]$ blastn -query hostR2_contigs_for16Sblast.fasta -db SILVA_SSU_LSU_combined.fasta -outfmt 5 -evalue 0.05 -num_threads 36 -num_descriptions 20 -gapopen 5 -gapextend 2 -penalty -3 -num_alignments 20 -reward 2 -out SILVA_hostR2_match.br
+
+## SILVA contaminants
+# parse the blast results (using python2 and script parse_blastn.py)
+(trinity)[mingers@scc2 db_200]$ python2 parse_blastn.py hostR2_hits.txt blastn SILVA_hostR2_match.br
+
+# Then get a list of contigs without any of the 16S matches
+# and then use the get_seq script to create a new fasta file with just the final host seqs
+
+(trinity)[mingers@scc2 db]$ cut -f 1 hostR2_hits.txt | grep -E "TRINITY_\w+_\w+_\w+_\w+" -o | sort | uniq > hostR2_16S_matches_toremove.txt
+# 2484 sequenes in hostR2_16S_matches_toremove.txt
+
+# Generate full list of sequences from the host "cleaned" transcriptomes (no syms)
+(trinity)[mingers@scc2 db]$ grep -o -E "TRINITY\w+" hostR2_contigs_for16Sblast.fasta > hostR2_no_symbiont_contigs.txt
+# 74243 seqs
+
+# Gets list of genes to keep
+
+(trinity)[mingers@scc2 db]$ grep -v -x -f hostR2_16S_matches_toremove.txt hostR2_no_symbiont_contigs.txt > clean_hostR2_contigs_list.txt
+(trinity)[mingers@scc2 db]$ grep 'TRINITY' clean_hostR2_contigs_list.txt | wc -l
+# 71759
+
+# get clean transcriptome for annotation
+(trinity)[mingers@scc2 db]$ python get_seq2.py hostR2_contigs_for16Sblast.fasta clean_hostR2_contigs_list.txt hostR2_transcripts_for_anno.fasta
+
+(trinity)[mingers@scc2 db]$ grep 'TRINITY' hostR2_transcripts_for_anno.fasta | wc -l
+71759
+
+# change gene and iso names from Trinity to Oarb
+(trinity)[mingers@scc2 db]$ cat hostR2_transcripts_for_anno.fasta | sed -E 's/len=.*//'| sed -E 's/^>TRINITY_DN((.*)_i[0-9]+)/>Oarb_\1 gene=isogroupOarb_\2/' > hostR2header_full.fasta
+
+# get the longest isoform
+# load trinity dependecies
+module load miniconda
+conda activate trinity
+module unload miniconda
+module load bowtie2/2.4.2
+module load salmon/1.1.0
+module load jellyfish/2.2.10
+module load samtools/1.10
+module load picard/2.25.2
+module load kallisto/0.43.0
+module load bowtie/1.2.2
+module load python2/2.7.16
+module load hisat2/2.2.0
+module unload python2
+module load python3/3.8.10
+module load blat/36x2
+module load subread/1.6.2
+module load gatk/4.2.0.0
+module load R/4.1.1
+module load star/2.7.9a
+module load rsem/1.3.1
+module load trinity/2.13.2
+module load trimmomatic
+
+# run the longest isoform pl script 
+(trinity)[mingers@scc2 db]$ /share/pkg.7/trinity/2.13.2/install/trinityrnaseq/util/misc/get_longest_isoform_seq_per_trinity_gene.pl hostR2header_full.fasta > hostR2_longest.fasta
+(trinity)[mingers@scc2 db_200]$ grep '>' hostR2header_full.fasta | wc -l
+71759
+(trinity)[mingers@scc2 MVI_Oculina]$ grep '>' hostR2_longest.fasta | wc -l
+40429
+
+#########################
+# make dummy genome
+(trinity)[mingers@scc2 db]$ concatFasta.pl fasta=hostR2_longest.fasta num=14
+concatenating 40429 records into 14 pseudo-chromosomes 
+2888 records per chromosome
+
+# copy concatFasta outputs into the fastq_path directory (hostR2_longest_cc.fasta and 	hostR2_longest_cc.tab)
+(trinity)[mingers@scc2 fastq_path]$ cat hostR2_longest_cc.fasta B_psyg_longest_cc.fasta > holoR2_longest.fasta
+
+# make your gff and gtf from hostR2_longest_cc.tab
+awk 'BEGIN {FS="\t"; OFS="\t"} {print $2}' hostR2_longest_cc.tab > R2_longest.bed
+sed -i -z 's/\n/\t'tech'\n/g' R2_longest.bed
+sed -i -z 's/\n/\t'gene'\n/g' R2_longest.bed
+awk 'BEGIN {FS=OFS="\t"} {print $3, $4}' hostR2_longest_cc.tab > R2_longest.cols
+paste R2_longest.bed R2_longest.cols > R2_longest.v2.bed
+sed -i -z 's/\n/\t\.\n/g' R2_longest.v2.bed
+sed -i -z 's/\n/\t\.\n/g' R2_longest.v2.bed
+sed -i -z 's/\n/\t\.\n/g' R2_longest.v2.bed
+awk 'BEGIN {FS=OFS="\t"} {print $1}' hostR2_longest_cc.tab > R2_longest.ids
+sed 's/^/'ID='/' R2_longest.ids > R2_longest.ids.v2
+paste R2_longest.v2.bed R2_longest.ids.v2 > R2_longest.gff
+
+module load bcl2fastq/2.20
+module load cellranger/7.2.0
+
+awk '{ gsub(/ID=/,"", $9); print } ' R2_longest.gff > R2_longest.gtf
+awk 'BEGIN{ OFS=FS } {$9="\""$9"\""; print } ' R2_longest.gtf > R2_longest1.gtf
+awk 'BEGIN{ OFS="\t" } { gsub(/gene/,"exon", $3); print } ' R2_longest1.gtf > R2_longest2.gtf
+awk 'BEGIN{ OFS="\t" }$9="transcript_id "$9 "; gene_id "$9' R2_longest2.gtf > R2_longest3.gtf 
+awk 'BEGIN{ FS=OFS="\t" } { gsub(/./,".", $6); gsub(/./,"+", $7); gsub(/./,"0", $8); print } ' R2_longest3.gtf > R2_longest4.gtf
+
+cellranger mkgtf R2_longest4.gtf R2_longest4_filt.gtf --attribute=gene_biotype:protein_coding
+
+sed '/Oarb_338618_c0_g1_i1/d' ./R2_longest4_filt.gtf > R2_longest5_filt.gtf
+
+# did mkref_cat_R2long to make cat_refgenome_R2long
+# doing count_A3_R2long and count_S3_R2long
+
+
+########################
+########################
+
+# going to try Hanny's oculina transcriptome + bsyg transcriptome (from Rivera & Davies, 2021)
+[mingers@scc2 MVI_Oculina]$ concatFasta.pl fasta=B_psygmophilum_transcriptome.fasta num=97
+
+# first thing i'm going to do is get the longest isoform from the oculina and b_psyg transcriptomes
+# load all the trinity requirements:
+module load miniconda
+conda activate trinity
+module unload miniconda
+module load bowtie2/2.4.2
+module load salmon/1.1.0
+module load jellyfish/2.2.10
+module load samtools/1.10
+module load picard/2.25.2
+module load kallisto/0.43.0
+module load bowtie/1.2.2
+module load python2/2.7.16
+module load hisat2/2.2.0
+module unload python2
+module load python3/3.8.10
+module load blat/36x2
+module load subread/1.6.2
+module load gatk/4.2.0.0
+module load R/4.1.1
+module load star/2.7.9a
+module load rsem/1.3.1
+module load trinity/2.13.2
+module load trimmomatic
+
+# run the longest isoform pl script 
+(trinity)[mingers@scc2 MVI_Oculina]$ /share/pkg.7/trinity/2.13.2/install/trinityrnaseq/util/misc/get_longest_isoform_seq_per_trinity_gene.pl B_psygmophilum_transcriptome.fasta > B_psyg_longest.fasta
+(trinity)[mingers@scc2 MVI_Oculina]$ grep '>' B_psygmophilum_transcriptome.fasta | wc -l
+31970
+(trinity)[mingers@scc2 MVI_Oculina]$ grep '>' B_psyg_longest.fasta | wc -l
+29655
+
+(trinity)[mingers@scc2 MVI_Oculina]$ /share/pkg.7/trinity/2.13.2/install/trinityrnaseq/util/misc/get_longest_isoform_seq_per_trinity_gene.pl O_arbuscula_transcriptome.fasta > O_arb_longest.fasta
+(trinity)[mingers@scc2 MVI_Oculina]$ grep '>' O_arbuscula_transcriptome.fasta | wc -l
+57470
+(trinity)[mingers@scc2 MVI_Oculina]$ grep '>' O_arb_longest.fasta | wc -l
+25650
+
+# and then make the dummy genomes from the longest isoform transcriptomes
+(trinity)[mingers@scc2 MVI_Oculina]$ concatFasta.pl fasta=B_psyg_longest.fasta num=97
+concatenating 29655 records into 97 pseudo-chromosomes 
+306 records per chromosome
+
+(trinity)[mingers@scc2 MVI_Oculina]$ concatFasta.pl fasta=O_arb_longest.fasta num=14
+(trinity)[mingers@scc2 MVI_Oculina]$ concatFasta.pl fasta=O_arb_longest.fasta num=14
+concatenating 25650 records into 14 pseudo-chromosomes 
+1833 records per chromosome
+
+# now copy all the concatFasta outputs into the fastq_path directory
+# change chr in the sym genome to scaffold
+(trinity)[mingers@scc2 fastq_path]$ sed -i 's/chr/scaffold/g' B_psyg_longest_cc.fasta
+(trinity)[mingers@scc2 fastq_path]$ cat O_arb_longest_cc.fasta B_psyg_longest_cc.fasta > hanny_holo_longest.fasta
+
+# make your Oculina gff and gtf from O_arb_longest_cc.tab
+awk 'BEGIN {FS="\t"; OFS="\t"} {print $2}' O_arb_longest_cc.tab > oarb_longest.bed
+sed -i -z 's/\n/\t'tech'\n/g' oarb_longest.bed
+sed -i -z 's/\n/\t'gene'\n/g' oarb_longest.bed
+awk 'BEGIN {FS=OFS="\t"} {print $3, $4}' O_arb_longest_cc.tab > oarb_longest.cols
+paste oarb_longest.bed oarb_longest.cols > oarb_longest.v2.bed
+sed -i -z 's/\n/\t\.\n/g' oarb_longest.v2.bed
+sed -i -z 's/\n/\t\.\n/g' oarb_longest.v2.bed
+sed -i -z 's/\n/\t\.\n/g' oarb_longest.v2.bed
+awk 'BEGIN {FS=OFS="\t"} {print $1}' O_arb_longest_cc.tab > oarb_longest.ids
+sed 's/^/'ID='/' oarb_longest.ids > oarb_longest.ids.v2
+paste oarb_longest.v2.bed oarb_longest.ids.v2 > oarb_longest.gff
+
+module load bcl2fastq/2.20
+module load cellranger/7.2.0
+
+awk '{ gsub(/ID=/,"", $9); print } ' oarb_longest.gff > oarb_longest.gtf
+awk 'BEGIN{ OFS=FS } {$9="\""$9"\""; print } ' oarb_longest.gtf > oarb_longest1.gtf
+awk 'BEGIN{ OFS="\t" } { gsub(/gene/,"exon", $3); print } ' oarb_longest1.gtf > oarb_longest2.gtf
+awk 'BEGIN{ OFS="\t" }$9="transcript_id "$9 "; gene_id "$9' oarb_longest2.gtf > oarb_longest3.gtf 
+awk 'BEGIN{ FS=OFS="\t" } { gsub(/./,".", $6); gsub(/./,"+", $7); gsub(/./,"0", $8); print } ' oarb_longest3.gtf > oarb_longest4.gtf
+
+cellranger mkgtf oarb_longest4.gtf oarb_longest4_filt.gtf --attribute=gene_biotype:protein_coding
+
+sed '/Oarb_142444_c2_g2_i1/d' ./oarb_longest4_filt.gtf > oarb_longest5_filt.gtf
+
+# did mkref_cat_hanny_long to make cat_refgenome_hannylong
+# now doing count_A3_hannylong and count_S3_hannylong
+
+####NOW 12/09/24 MAKING THE HANNY THING BUT WITH THE CAT GTF TOO
+
+# make your Bpsyg gff and gtf from B_psyg_longest_cc.tab
+awk 'BEGIN {FS="\t"; OFS="\t"} {print $2}' B_psyg_longest_cc.tab > bpsyg_longest.bed
+sed -i -z 's/\n/\t'tech'\n/g' bpsyg_longest.bed
+sed -i -z 's/\n/\t'gene'\n/g' bpsyg_longest.bed
+awk 'BEGIN {FS=OFS="\t"} {print $3, $4}' B_psyg_longest_cc.tab > bpsyg_longest.cols
+paste bpsyg_longest.bed bpsyg_longest.cols > bpsyg_longest.v2.bed
+sed -i -z 's/\n/\t\.\n/g' bpsyg_longest.v2.bed
+sed -i -z 's/\n/\t\.\n/g' bpsyg_longest.v2.bed
+sed -i -z 's/\n/\t\.\n/g' bpsyg_longest.v2.bed
+awk 'BEGIN {FS=OFS="\t"} {print $1}' B_psyg_longest_cc.tab > bpsyg_longest.ids
+sed 's/^/'ID='/' bpsyg_longest.ids > bpsyg_longest.ids.v2
+paste bpsyg_longest.v2.bed bpsyg_longest.ids.v2 > bpsyg_longest.gff
+
+module load bcl2fastq/2.20
+module load cellranger/7.2.0
+
+awk '{ gsub(/ID=/,"", $9); print } ' bpsyg_longest.gff > bpsyg_longest.gtf
+awk 'BEGIN{ OFS=FS } {$9="\""$9"\""; print } ' bpsyg_longest.gtf > bpsyg_longest1.gtf
+awk 'BEGIN{ OFS="\t" } { gsub(/gene/,"exon", $3); print } ' bpsyg_longest1.gtf > bpsyg_longest2.gtf
+awk 'BEGIN{ OFS="\t" }$9="transcript_id "$9 "; gene_id "$9' bpsyg_longest2.gtf > bpsyg_longest3.gtf 
+awk 'BEGIN{ FS=OFS="\t" } { gsub(/./,".", $6); gsub(/./,"+", $7); gsub(/./,"0", $8); print } ' bpsyg_longest3.gtf > bpsyg_longest4.gtf
+
+cellranger mkgtf bpsyg_longest4.gtf bpsyg_longest4_filt.gtf --attribute=gene_biotype:protein_coding
+
+# replace 'chr' by scaffold in the algae gtf
+sed -i 's/chr/scaffold/g' bpsyg_longest4_filt.gtf
+
+sed '/Sym_159895_c0_g1_i1/d' ./bpsyg_longest4_filt.gtf > bpsyg_longest5_filt.gtf
+
+cat oarb_longest5_filt.gtf bpsyg_longest5_filt.gtf > hanny_holo_longest_filt.gtf
+
+#did mkref_catcat_hanny_long to make catcat_refgenome_hannylong
+#now doing count_A3_hannylong_catcat (to make A3_catcat_hannylong) and count_S3_hannylong_catcat (to make S3_catcat_hannylong)
