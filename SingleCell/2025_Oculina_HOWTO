@@ -1,0 +1,40 @@
+#03/03/25
+#start by concatonating your new oculina genome and new oculina gtf with the bpsyg
+
+#note to self, the "algae" ones are the original files from hanny, but the bpsyg ones are from the same original files just longest orf filtered
+
+[mingers@scc2 fastq_path]$ module load bcl2fastq/2.20
+[mingers@scc2 fastq_path]$ module load cellranger/9.0.1
+
+
+[mingers@scc2 fastq_path]$ cat /projectnb/coral/Oculina_Genome_2025/Oculina_arbuscula/jaOcuArbu1.fa.masked algae_reftranscriptome.fasta > holobiont_genome2025.fasta
+
+#the gtf jaOcuArbu1_filt.gtf was giving cellranger issues bc some of the entries didn't say "transcript_id" and "gene_id" so I used the code created here: https://github.com/Gaius-Augustus/BRAKER/issues/457 for Fix_Augustus_gtf.pl (which I edited to have the gene_id and transcript_id when transcript is called in the 3rd column) to make jaOcuArbu1_new.gtf in the Oculina genome folder
+[mingers@scc2 Oculina_arbuscula]$ cat jaOcuArbu1.gtf | Fix_Augustus_gtf.pl > jaOcuArbu1_new.gtf
+#but now the entries for feature "transcript" have the gene_id in the transcript_id format, so run the following:
+awk -F'\t' 'BEGIN {OFS=FS} $3 == "transcript" {
+    n = split($9, a, /;[ ]*/);
+    for (i=1; i<=n; i++) {
+        if (a[i] ~ /^gene_id "/) {
+            sub(/\.[^"]+/, "", a[i]);  # Remove suffix after first period
+        }
+    }
+    $9 = "";
+    for (i=1; i<=n; i++) {
+        $9 = $9 (i==1 ? "" : "; ") a[i];
+    }
+} 1' jaOcuArbu1_new.gtf > jaOcuArbu1_new2.gtf
+
+#thank you deepseak for the code
+
+[mingers@scc2 fastq_path]$ cellranger mkgtf /projectnb/coral/Oculina_Genome_2025/Oculina_arbuscula/jaOcuArbu1_new2.gtf jaOcuArbu1_filt.gtf --attribute=gene_biotype:protein_coding
+[mingers@scc2 fastq_path]$ head jaOcuArbu1_filt.gtf
+
+[mingers@scc2 fastq_path]$ cat jaOcuArbu1_filt.gtf algae_ref5_filt.gtf > holobiont_gtf2025.gtf
+
+#change "scaffold" to "chr" in the algae refgenome (in the holobiont fasta
+sed -i 's/scaffold/chr/g' holobiont_genome2025.fasta
+
+#make mkref_catcatOa_2025 and run to make catcat_Oarefgenome_2025 reference genome
+#make count_S3_catcatOa and count_A3_catcatOa to do counts for S3_catcat_Oa and A3_catcat_Oa
+
