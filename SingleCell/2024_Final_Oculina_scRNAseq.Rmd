@@ -63,7 +63,7 @@ Make reference files; might have to think about sym reads in here, but can come 
 
 ```{r}
 # load gene annotations
-annotations <- read.delim("./files/apoculata_GeneAnnotation_combined.txt", sep="\t", header=TRUE)
+annotations_apoc <- read.delim("./files/apoculata_GeneAnnotation_combined.txt", sep="\t", header=TRUE)
 head(annotations)
 
 #seq2iso <- annotations %>%
