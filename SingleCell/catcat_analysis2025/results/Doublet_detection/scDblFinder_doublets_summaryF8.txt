@@ -1,0 +1,3 @@
+scDblFinder.class	total_count	percent
+singlet	3542	92.63%
+doublet	282	7.37%
