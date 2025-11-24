@@ -5783,5 +5783,9 @@ head(go_bp_gd1234aonly)
 write.table(go_bp_gd1234aonly, "./files/MWU_BP_fj_gd1234a_ONLY_GO.txt", quote=F, sep="\t", row.names=FALSE)
 ```
 
+save the seurat object as an RDS
+```{r}
+saveRDS(oculina_named_new, file="oculina_seurat.rds", compress = "xz")
+```
 
 
