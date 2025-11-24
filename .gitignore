@@ -6,9 +6,12 @@
 *.fa.gz
 *.fastq.gz
 *.fasta
-*.rds
 dissim_*
 go.obo
 gomwu.functions.R
 gomwu_a.pl
 gomwu_b.pl
+*nochim.rds
+*taxa.rds
+*sp.rds
+*25.rds
